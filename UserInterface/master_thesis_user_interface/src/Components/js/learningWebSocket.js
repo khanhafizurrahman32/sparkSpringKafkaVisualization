@@ -2,12 +2,17 @@ import React, { Component } from 'react';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
 import $ from 'jquery';
-import Plotly from 'plotly';
+//import Plotly from 'plotly'; // kaj kore na
+import Plot from 'react-plotly.js';
 
 var stompClient = null;
 class learningWebSocket extends Component {
     constructor(props){
         super(props);
+        this.state={
+            drawingData_state: [],
+            drawingLayout_state: {}
+        }
         this.connect = this.connect.bind(this);
         this.disconnect = this.disconnect.bind(this);
         this.visualization = this.visualization.bind(this);
@@ -56,12 +61,15 @@ class learningWebSocket extends Component {
 
     drawGraph(){
         console.log('graph localization');
-        let draw_places = $('#visualization_id');
-        Plotly.plot(draw_places,[{
+        var data = [{
             type: 'bar',
             x: [1,2,3],
             y: [2,5,3]
-        }],{margin: {t:0}});
+        }]
+
+        var layout =  {width: 320, height: 240, title: 'A Fancy Plot'} 
+        this.setState({drawingData_state: data})
+        this.setState({drawingLayout_state: layout})
     }
 
     render() {
@@ -79,6 +87,7 @@ class learningWebSocket extends Component {
                 </form>
 
                 <div id="visualization_id"></div>
+                <Plot data= {this.state.drawingData_state} layout={this.state.drawingLayout_state} />
             </div>
 
         );

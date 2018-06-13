@@ -54,6 +54,11 @@ public class WebSocketServiceImplementation implements WebSocketServiceInterface
                 if(consumeMessagesValueList.size() % 50 == 0){
                     System.out.printf("Consumer Record: (%s, %s, %d, %d)\n", record.key(), record.value(), record.partition(), record.offset());
                     System.out.println(consumeMessagesValueList.size());
+                    try {
+                        Thread.sleep(10000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     this.messagingTemplate.convertAndSend("/topic/kafkaMessages", consumeMessagesValueList);
                     consumeMessagesValueList = new ArrayList<String>();
                 }
