@@ -2,17 +2,13 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.functions import pandas_udf, PandasUDFType
 from pyspark.sql.types import *
-from pyspark import SparkContext
 import sys
-import importlib
 from pandas import DataFrame, concat
-from numpy import ravel
+import numpy as np
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.preprocessing import LabelEncoder
 
 
-
-json_string = 'ghghghgh'
 def createSparkSession(appName,master_server):
     spark = SparkSession \
         .builder \
@@ -22,6 +18,7 @@ def createSparkSession(appName,master_server):
 
     return spark
 
+# option("startingOffsets", "earliest") option allow to read data from the beginning otherwise we can only view data when we submit after application starts...
 def createInitialDataFrame(spark, kafka_bootstrap_server, subscribe_topic):
     df = spark \
         .readStream \
@@ -43,28 +40,24 @@ def inputSchema():
     ])
     return schema
 
-def outputSchema():
-    output_schema = StructType([
-    #StructField("class", StringType()),
-    StructField("mean_sepal_length", DoubleType()),
-    StructField("mean_sepal_width", DoubleType()),
-    StructField("mean_petal_length", DoubleType()),
-    StructField("mean_petal_width", DoubleType()),
-    ])
-
-    return output_schema
 
 def outputOfScikitLearnSchema():
     output_of_scikit_learn = StructType([
         StructField("c1", DoubleType()),
         StructField("c2", DoubleType()),
     ])
-
     return output_of_scikit_learn
 
+def outputKafkaSchema():
+    output_kafka_schema = StructType([
+        StructField("key", StringType()),
+        StructField("value", StringType())
+    ])
+    return output_kafka_schema
+
+# a tester method to save the contents to output file
 def outputAsJson(pd_df):
     json_string = pd_df.to_json(path_or_buf='/Users/khanhafizurrahman/Desktop/Thesis/code/Thesis_Implementation/kafkaStreamAnalysis/output_json/test2.json',orient= 'split')
-   # print(json_string)
 
 def getMean(X, XLabel):
     CLabel = np.unique(XLabel)
@@ -88,6 +81,13 @@ def FLDA_Cholesky(feature_data,feature_label_data):
     G = np.dot(Q,R_Inv.T)
     return G,Q,C
 
+# In Lda, we found the variance using eigen vectors and choose the best among those variances
+def outputOfFLDAAlgorithm(X,G):
+    eigen_val_of_G, eigen_vec_of_G = np.linalg.eig(G)
+    print(eigen_val_of_G)
+    Y = np.dot(X,eigen_vec_of_G)
+    return Y
+
 output_of_scikit_learn = outputOfScikitLearnSchema()
 
 @pandas_udf(output_of_scikit_learn, functionType=PandasUDFType.GROUPED_MAP)
@@ -97,14 +97,14 @@ def traditional_LDA(df):
     X3 = DataFrame(df['petal_length_in_cm'])
     X4 = DataFrame(df['petal_width_in_cm'])
     Y = DataFrame(df['class'])
-    y = ravel(Y.values)
+    y = np.ravel(Y.values)
     enc = LabelEncoder()
     label_encoder = enc.fit(y)
     y = label_encoder.transform(y) + 1
     X = concat([X1, X2, X3, X4], axis=1, ignore_index=True)
     sklearn_lda = LDA()
     X_lda_sklearn = sklearn_lda.fit_transform(X,y)
-    X_lda_sklearn_df = DataFrame(X_lda_sklearn)
+    X_lda_sklearn_df = DataFrame(X_lda_sklearn) # pandas.core.frame.DataFrame
     outputAsJson(X_lda_sklearn_df)
     return X_lda_sklearn_df
 
@@ -117,10 +117,13 @@ def flda(df):
     feature_data = concat([X1, X2, X3, X4], axis=1, ignore_index=True)
     feature_data = feature_data.values
     feature_data = feature_data.T
-    feature_label_data = ravel((df['class']))
-    feature_label_data = feature_label_data.T;
+    feature_label_data = np.ravel((df['class']))
+    feature_label_data = feature_label_data.T
     G, Q, C = FLDA_Cholesky(feature_data, feature_label_data)
-    return G,Q,C
+    output_of_alg = outputOfFLDAAlgorithm(feature_data, G)
+    return output_of_alg
+
+output_kafka_schema = outputKafkaSchema()
 
 
 def writeStream(df3):
@@ -130,45 +133,48 @@ def writeStream(df3):
         .start() \
         .awaitTermination()
 
-def writeStreamtoKafka(df3, output_topic):
-    print('inside write stream to kafka')
+
+def test_writeStream_to_kafka(testDataFrame, kafka_bootstrap_server, output_topic):
+    testDataFrame.printSchema()
     print(output_topic)
-    df3 \
+    query = testDataFrame \
         .writeStream \
         .format("kafka") \
-        .option("checkpointLocation", "/Users/khanhafizurrahman/Desktop/Thesis/code/checkpoint_Loc") \
         .option("kafka.bootstrap.servers", "localhost:9092") \
         .option("topic", output_topic) \
-        .start()
+        .start() \
+        .awaitTermination()
 
 
 def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic):
     spark = createSparkSession(appName,master_server)
+    spark.conf.set("spark.sql.streaming.checkpointLocation", "/Users/khanhafizurrahman/Desktop/Thesis/code/Thesis_Implementation/checkPoint/test_writeStream_to_kafka")
     df = createInitialDataFrame(spark, kafka_bootstrap_server, subscribe_topic)
     df = df.selectExpr("CAST(value AS STRING)")
-    #df.printSchema()
     schema = inputSchema()
     df1 = df.select(from_json(df.value, schema).alias("json"))
     df2 = df1.select('json.*')
+    #df2_sub = df2.selectExpr("CAST(sepal_length_in_cm AS STRING) AS key","to_json(struct(*)) AS value")
+    #df2_sub_val = df2_sub.select('value') # only print the value of df2_sub
     df3 = df2.groupby("emni").apply(traditional_LDA)
-    df4 = df2.groupby("emni").apply(flda)
-    return df3, df4
+    df3_sub = df3.selectExpr("CAST(c1 AS STRING) AS key","to_json(struct(*)) AS value")
+    #df4 = df2.groupby("emni").apply(flda)
+    return df3_sub # should be df3, df4
+
 
 
 if __name__ == '__main__':
-    print(len(sys.argv), str(sys.argv[1]))
     appName = str(sys.argv[1])
     master_server = str(sys.argv[2])
     kafka_bootstrap_server = str(sys.argv[3])
     subscribe_topic = str(sys.argv[4])
     subscribe_output_topic = str(sys.argv[5])
-    write_to_console_df,write_to_kafka_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
-    print(write_to_console_df)
+    #write_to_console_df,write_to_kafka_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
+    write_to_console_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
     columns_of_the_schema = write_to_console_df.columns
     for column in columns_of_the_schema:
         pass
 
-    writeStream(df3= write_to_console_df)
-    print('inside main method!!!')
-    print(subscribe_output_topic)
-    writeStreamtoKafka(df3= write_to_console_df, output_topic= subscribe_output_topic) # value of df3 will be changed to write_to_kafka_df
+    test_writeStream_to_kafka(testDataFrame = write_to_console_df, kafka_bootstrap_server = kafka_bootstrap_server, output_topic = subscribe_output_topic)
+    #writeStream(df3= write_to_console_df)
+    #writeStreamtoKafka(df3= write_to_console_df, output_topic= subscribe_output_topic) # value of df3 will be changed to write_to_kafka_df

@@ -9,5 +9,4 @@ public interface DataAnalysisServiceInterface {
     void startKafkaTerminalCommandsFromJava(String topicName, String outputTopicName);
     void sendDataToKafkaTopic(Map<String, String> parameters);
     void submitPysparkProjectTerminalCommand(Map<String, String> parameters);
-    void consumeFinalKafkaMessage(String topic, String bootstrap_servers);
 }

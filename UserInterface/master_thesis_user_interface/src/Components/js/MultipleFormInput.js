@@ -32,8 +32,9 @@ class MultipleFormInput extends Component {
     }else if (target.type === 'text') {
       value = target.value;
       let v = value + "_output"
+      sessionStorage.setItem('topic_name', v);
       this.setState({topic_output_name: v})
-      console.log("v: "+v);
+   
     }else {
       sessionStorage.setItem('currentFile', target.value);
       value = target.value
@@ -110,9 +111,6 @@ class MultipleFormInput extends Component {
     this.fetchDataFromDirectory();
   }
 
-  testFunction(){
-    console.log('ll');
-  }
 
   fetchDataFromDirectory(){
     $.ajax({
@@ -120,7 +118,6 @@ class MultipleFormInput extends Component {
       dataType: 'json',
       cache: 'false',
       success: function(data){
-        this.testFunction();
         let items = [];
         for (let i =0; i<data.length; i++){
           items.push(<option key={data[i].id} value={data[i].fileName}>{data[i].fileName}</option>);
@@ -169,7 +166,7 @@ class MultipleFormInput extends Component {
           </label>
         </div>
         <br />
-        <label> Name of the Topic: {this.state.topic_output_name} </label> &nbsp; &nbsp;
+        <label> Name of the Topic: </label> &nbsp; &nbsp;
         <input type="text" name = "topic_name" placeholder="topic_name" onChange={this.handleInputChange}></input>
         &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
         <input type="button" onClick={this.createTopic} value="createTopic!" />

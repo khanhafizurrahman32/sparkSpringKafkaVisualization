@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
 import $ from 'jquery';
+import Plotly from 'plotly';
 
 var stompClient = null;
 class learningWebSocket extends Component {
@@ -9,29 +10,24 @@ class learningWebSocket extends Component {
         super(props);
         this.connect = this.connect.bind(this);
         this.disconnect = this.disconnect.bind(this);
-        this.sendName = this.sendName.bind(this);
+        this.visualization = this.visualization.bind(this);
     }
 
     setConnected(connected) {
         $("#connect").prop("disabled", connected);
         $("#disconnect").prop("disabled", !connected);
-        if (connected) {
-            $("#conversation").show();
-        }
-        else {
-            $("#conversation").hide();
-        }
-        $("#greetings").html("");
     }
 
     connect(){
         var socket = new SockJS('http://localhost:8080/gs-guide-websocket');
-        stompClient = Stomp.over(socket);
+        stompClient = Stomp.over(socket); // use different web socket other than browsers native websocket
         stompClient.connect({}, function (frame) {
             this.setConnected(true);
             console.log('Connected: ' + frame);
-            stompClient.subscribe('/topic/greetings', function (greeting) {
-                this.showGreeting(JSON.parse(greeting.body).content);
+            // subscribe method returns id and unsubscribe method
+            stompClient.subscribe('/topic/kafkaMessages', function (messageFromKafka) {
+                console.log('messageFromKafka');
+                this.storeMessages(JSON.parse(messageFromKafka.body).content);
             }.bind(this));
         }.bind(this)); 
     }
@@ -45,13 +41,27 @@ class learningWebSocket extends Component {
         console.log("Disconnected"); 
     }
 
-    sendName(event){
+    visualization(event){
         event.preventDefault();
-        stompClient.send("/app/hello", {}, JSON.stringify({'name': $("#name").val()}));
+        // body of STOMP message must be String
+        var stompBody = {topic: sessionStorage.getItem('topic_name'), bootstrap_servers: '127.0.0.1:9092'}
+        stompClient.send("/app/checkContinuosData", {}, JSON.stringify(stompBody)); //parameters: destination, headers, body
     }
 
-    showGreeting(message) {
-        $("#greetings").append("<tr><td>" + message + "</td></tr>");
+    storeMessages(message) {
+        console.log('messageReceived')
+        console.log(message);
+        this.drawGraph()
+    }
+
+    drawGraph(){
+        console.log('graph localization');
+        let draw_places = $('#visualization_id');
+        Plotly.plot(draw_places,[{
+            type: 'bar',
+            x: [1,2,3],
+            y: [2,5,3]
+        }],{margin: {t:0}});
     }
 
     render() {
@@ -65,24 +75,10 @@ class learningWebSocket extends Component {
                 </div>
 
                 <form className="form-inline">
-                    <div className="form-group">
-                        <label htmlFor="name">What is your name?</label>
-                        <input type="text" id="name" className="form-control" placeholder="Your name here..." />
-                    </div>
-                    <button id="send" className="btn btn-default" type="submit" onClick={this.sendName}>Send</button>
+                    <button id="send" className="btn btn-default" type="submit" onClick={this.visualization}>Visualization</button>
                 </form>
 
-                <div className="col-md-12">
-                    <table id="conversation" className="table table-striped">
-                        <thead>
-                        <tr>
-                            <th>Greetings</th>
-                        </tr>
-                        </thead>
-                        <tbody id="greetings">
-                        </tbody>
-                    </table>
-                </div>
+                <div id="visualization_id"></div>
             </div>
 
         );

@@ -4,6 +4,7 @@ import com.spark_spring_kafka_viz.POJO.FileDescription;
 import com.spark_spring_kafka_viz.POJO.ResponseMetaData;
 import com.spark_spring_kafka_viz.file_service_interface.DataAnalysisServiceInterface;
 import com.spark_spring_kafka_viz.file_service_interface.FileServiceInterface;
+import com.spark_spring_kafka_viz.file_service_interface.WebSocketServiceInterface;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -23,11 +24,13 @@ public class spark_spring_kafka_viz_controller {
 
     private FileServiceInterface fileService;
     private DataAnalysisServiceInterface dataAnalysisService;
+    private WebSocketServiceInterface webSocketServiceInterface;
 
      @Autowired
-     public spark_spring_kafka_viz_controller(FileServiceInterface fileService, DataAnalysisServiceInterface dataAnalysisService) {
+     public spark_spring_kafka_viz_controller(FileServiceInterface fileService, DataAnalysisServiceInterface dataAnalysisService, WebSocketServiceInterface webSocketServiceInterface) {
          this.fileService = fileService;
          this.dataAnalysisService = dataAnalysisService;
+         this.webSocketServiceInterface = webSocketServiceInterface;
      }
 
      @CrossOrigin
@@ -76,8 +79,10 @@ public class spark_spring_kafka_viz_controller {
     }
 
     @MessageMapping("/checkContinuosData")
-    @SendTo("/topic/kafkaMessages")
-    public void sentFinalKafkaMessagetoFrontEnd(String topic, String bootstrap_servers) {
-         dataAnalysisService.consumeFinalKafkaMessage(topic, bootstrap_servers);
+    public int sentFinalKafkaMessagetoFrontEnd(@RequestParam Map<String, String> parameters) {
+         String topic = parameters.get("topic");
+         String bootstrap_servers = parameters.get("bootstrap_servers");
+         webSocketServiceInterface.consumeFinalKafkaMessage(topic, bootstrap_servers);
+         return 5;
     }
 }

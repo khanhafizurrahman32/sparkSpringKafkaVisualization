@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.spark_spring_kafka_viz.file_service_interface.DataAnalysisServiceInterface;
 import com.spark_spring_kafka_viz.utilities.printOutput;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -20,10 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 
@@ -41,7 +35,7 @@ public class DataAnalysisServiceImplementation implements DataAnalysisServiceInt
 
     @Override
     public void startKafkaTerminalCommandsFromJava(String topicName, String outputTopicName) {
-        String command_to_run = "sh /Users/khanhafizurrahman/Desktop/Thesis/code/Thesis_Implementation/FinalCode/KafkaStreamAnalysis/kafka_start.sh " + topicName + " " + outputTopicName;
+        String command_to_run = "sh /Users/khanhafizurrahman/Desktop/ThesisFinalCode/KafkaStreamAnalysis/kafka_start.sh " + topicName + " " + outputTopicName;
         Runtime rt = Runtime.getRuntime();
         printOutput outputMessage, errorReported;
 
@@ -131,7 +125,7 @@ public class DataAnalysisServiceImplementation implements DataAnalysisServiceInt
         System.out.println("inside submitPysparkProjectTerminalCommand");
         System.out.println(app_name + '\t' +  master_server + '\t' + kafka_bootstrap_server + '\t' + subscribe_topic + '\t' + subscribe_output_topic);
 
-        String command_to_run = "sh /Users/khanhafizurrahman/Desktop/Thesis/code/Thesis_Implementation/FinalCode/KafkaStreamAnalysis/spark_start.sh "
+        String command_to_run = "sh /Users/khanhafizurrahman/Desktop/ThesisFinalCode/KafkaStreamAnalysis/spark_start.sh "
                 + app_name + " "
                 + master_server + " "
                 + kafka_bootstrap_server + " "
@@ -150,41 +144,5 @@ public class DataAnalysisServiceImplementation implements DataAnalysisServiceInt
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private Properties configurFinalKafkaConsumerProperties(String bootstrap_servers) {
-        final Properties props = new Properties();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "kafkaExampleConsumer"); // check whether it has dependency on producers group id config
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        return props;
-    }
-
-    private Consumer<Long, String> createFinalKafkaConsumer(String topic, String bootstrap_servers){
-        final Properties props = configurFinalKafkaConsumerProperties(bootstrap_servers);
-        final Consumer<Long, String> consumer = new KafkaConsumer<>(props);
-        consumer.subscribe(Collections.singletonList(topic));
-        return consumer;
-    }
-
-    private void runFinalKafkaConsumer(String topic, String bootstrap_servers) {
-        final Consumer<Long, String> consumer = createFinalKafkaConsumer(topic, bootstrap_servers);
-        final int giveUp = 100; int noRecordsCount = 0;
-
-        while(true) {
-            final ConsumerRecords<Long, String> consumerRecords = consumer.poll(10);
-
-
-            consumerRecords.forEach(record -> {
-                System.out.printf("Consumer Record: (%s, %s, %d, %d)\n", record.key(), record.value(), record.partition(), record.offset());
-            });
-
-            consumer.commitAsync();
-        }
-    }
-    @Override
-    public void consumeFinalKafkaMessage(String topic, String bootstrap_servers) {
-        runFinalKafkaConsumer(topic, bootstrap_servers);
     }
 }

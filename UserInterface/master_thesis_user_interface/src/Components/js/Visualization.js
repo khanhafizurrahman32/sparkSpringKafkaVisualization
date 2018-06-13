@@ -3,6 +3,7 @@ import Plot from 'react-plotly.js';
 import $ from 'jquery';
 import Plotly from 'plotly.js/dist/plotly';
 
+
 class Visualization extends Component {
   constructor(props){
     super(props);
