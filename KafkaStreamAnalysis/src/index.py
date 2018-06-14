@@ -90,7 +90,25 @@ def outputOfFLDAAlgorithm(X,G):
 
 output_of_scikit_learn = outputOfScikitLearnSchema()
 
-@pandas_udf(output_of_scikit_learn, functionType=PandasUDFType.GROUPED_MAP)
+def renameCols(df, output_df):
+    input_cols = list(df)
+    output_cols = list(output_df)
+    i = 0
+    for x in output_cols:
+        output_df.rename(columns={x: input_cols[i]}, inplace=True)
+        i = i + 1
+    return output_df
+
+def arrangeDatasets(df, output_df):
+    input_cols = list(df)
+    output_cols = list(output_df)
+    remaining_cols = list(set(input_cols) - set(output_cols))
+    for x in remaining_cols:
+        output_df[x] = 0
+    return output_df
+    
+inputSchema_output = inputSchema()
+@pandas_udf(inputSchema_output, functionType=PandasUDFType.GROUPED_MAP)
 def traditional_LDA(df):
     X1 = DataFrame(df['sepal_length_in_cm'])
     X2 = DataFrame(df['sepal_width_in_cm'])
@@ -102,11 +120,17 @@ def traditional_LDA(df):
     label_encoder = enc.fit(y)
     y = label_encoder.transform(y) + 1
     X = concat([X1, X2, X3, X4], axis=1, ignore_index=True)
+    print 'ddd'
     sklearn_lda = LDA()
     X_lda_sklearn = sklearn_lda.fit_transform(X,y)
     X_lda_sklearn_df = DataFrame(X_lda_sklearn) # pandas.core.frame.DataFrame
+    print(list(X_lda_sklearn_df))
+    output_df = renameCols(df,X_lda_sklearn_df)
+    print(list(output_df))
+    output_df = arrangeDatasets(df,output_df)
+
     outputAsJson(X_lda_sklearn_df)
-    return X_lda_sklearn_df
+    return output_df
 
 @pandas_udf(output_of_scikit_learn, functionType=PandasUDFType.GROUPED_MAP)
 def flda(df):
@@ -157,7 +181,7 @@ def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_
     #df2_sub = df2.selectExpr("CAST(sepal_length_in_cm AS STRING) AS key","to_json(struct(*)) AS value")
     #df2_sub_val = df2_sub.select('value') # only print the value of df2_sub
     df3 = df2.groupby("emni").apply(traditional_LDA)
-    df3_sub = df3.selectExpr("CAST(c1 AS STRING) AS key","to_json(struct(*)) AS value")
+    df3_sub = df3.selectExpr("CAST(sepal_length_in_cm AS STRING) AS key","to_json(struct(*)) AS value")
     #df4 = df2.groupby("emni").apply(flda)
     return df3_sub # should be df3, df4
 
@@ -175,6 +199,6 @@ if __name__ == '__main__':
     for column in columns_of_the_schema:
         pass
 
-    test_writeStream_to_kafka(testDataFrame = write_to_console_df, kafka_bootstrap_server = kafka_bootstrap_server, output_topic = subscribe_output_topic)
-    #writeStream(df3= write_to_console_df)
+    #test_writeStream_to_kafka(testDataFrame = write_to_console_df, kafka_bootstrap_server = kafka_bootstrap_server, output_topic = subscribe_output_topic)
+    writeStream(df3= write_to_console_df)
     #writeStreamtoKafka(df3= write_to_console_df, output_topic= subscribe_output_topic) # value of df3 will be changed to write_to_kafka_df
