@@ -45,10 +45,46 @@ class MultipleFormInput extends Component {
           console.log('Connected: ' + frame);
           // subscribe method returns id and unsubscribe method
           stompClient.subscribe('/topic/kafkaMessages', function (messageFromKafka) {
-              console.log('messageFromKafka');
+              let input_messages = new Array(messageFromKafka.body);
+              this.manipulateDataForDrawing(input_messages)
+              //console.log(json_string);
               this.storeMessages(JSON.parse(messageFromKafka.body).content);
           }.bind(this));
       }.bind(this)); 
+  }
+
+  manipulateDataForDrawing(input_messages){
+ 
+    let globalArray = [];
+    let arr = [];
+    let input_array = [];
+    let input_array_json = []
+    
+
+    input_messages.forEach(function(elem){
+      input_array.push(JSON.parse(elem));  
+    })
+
+    input_array.forEach(function(elem){
+      elem.forEach(function(inner_elem){
+        input_array_json.push(JSON.parse(inner_elem))
+      })
+    })
+
+    let total_keys = Object.keys(input_array_json[0]).length
+    //console.log(input_array_json[0]['c1']);
+    
+    for (let i=0; i<total_keys; i++){
+      input_array_json.forEach(function(elem){
+        arr.push(elem[(Object.keys(input_array_json[0]))[i]]);
+      })
+      if(arr.length === 50){
+        globalArray.push(arr);
+        arr = []
+      }
+    }
+
+    console.log(globalArray);
   }
 
   disconnect(){
@@ -69,7 +105,6 @@ class MultipleFormInput extends Component {
 
   storeMessages(message) {
       console.log('messageReceived')
-      console.log(message);
       this.drawGraph()
   }
 
@@ -96,7 +131,7 @@ class MultipleFormInput extends Component {
     var layout =  {width: 320, height: 240, title: 'A Fancy Plot'} 
     this.setState({reduced_drawing_data_state: data})
     this.setState({reduced_drawing_layout_state: layout})
-}
+  }
 
   handleInputChange(event) {
     const target = event.target;
