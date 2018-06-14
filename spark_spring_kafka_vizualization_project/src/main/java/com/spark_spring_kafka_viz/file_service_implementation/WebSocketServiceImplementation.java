@@ -13,6 +13,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.json.JSONObject;
+import org.json.JSONArray;
+
 
 /**
  * Created by khanhafizurrahman on 13/6/18.
@@ -50,15 +53,18 @@ public class WebSocketServiceImplementation implements WebSocketServiceInterface
         while(true) {
             final ConsumerRecords<Long, String> consumerRecords = consumer.poll(50);
             for (ConsumerRecord record: consumerRecords){
+                //JSONObject jsonObj = new JSONObject(record.value().toString());
                 consumeMessagesValueList.add(record.value().toString());
                 if(consumeMessagesValueList.size() % 50 == 0){
+                    JSONArray jsarr = new JSONArray(consumeMessagesValueList);
                     System.out.printf("Consumer Record: (%s, %s, %d, %d)\n", record.key(), record.value(), record.partition(), record.offset());
                     System.out.println(consumeMessagesValueList.size());
                     try {
-                        Thread.sleep(10000);
+                        Thread.sleep(3000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+                    //this.messagingTemplate.convertAndSend("/topic/kafkaMessages", jsarr);
                     this.messagingTemplate.convertAndSend("/topic/kafkaMessages", consumeMessagesValueList);
                     consumeMessagesValueList = new ArrayList<String>();
                 }
