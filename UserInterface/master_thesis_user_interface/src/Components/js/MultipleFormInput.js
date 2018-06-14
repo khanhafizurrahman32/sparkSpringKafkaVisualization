@@ -46,9 +46,8 @@ class MultipleFormInput extends Component {
           // subscribe method returns id and unsubscribe method
           stompClient.subscribe('/topic/kafkaMessages', function (messageFromKafka) {
               let input_messages = new Array(messageFromKafka.body);
-              this.manipulateDataForDrawing(input_messages)
-              //console.log(json_string);
-              this.storeMessages(JSON.parse(messageFromKafka.body).content);
+              let data_for_drawing = this.manipulateDataForDrawing(input_messages);
+              this.drawGraph(data_for_drawing);
           }.bind(this));
       }.bind(this)); 
   }
@@ -60,11 +59,12 @@ class MultipleFormInput extends Component {
     let input_array = [];
     let input_array_json = []
     
-
     input_messages.forEach(function(elem){
       input_array.push(JSON.parse(elem));  
     })
 
+    // input_array is a multi dimensional where external length is 1 and inner length is 50: inner length is
+    // of type String thats why we convert each into object
     input_array.forEach(function(elem){
       elem.forEach(function(inner_elem){
         input_array_json.push(JSON.parse(inner_elem))
@@ -72,8 +72,9 @@ class MultipleFormInput extends Component {
     })
 
     let total_keys = Object.keys(input_array_json[0]).length
-    //console.log(input_array_json[0]['c1']);
     
+    // we try to have final array like this: column header_1:[], column header_2:[] therefore we first create
+    // the inner array and push inner array into final array
     for (let i=0; i<total_keys; i++){
       input_array_json.forEach(function(elem){
         arr.push(elem[(Object.keys(input_array_json[0]))[i]]);
@@ -85,6 +86,7 @@ class MultipleFormInput extends Component {
     }
 
     console.log(globalArray);
+    return globalArray;
   }
 
   disconnect(){
@@ -103,32 +105,17 @@ class MultipleFormInput extends Component {
       stompClient.send("/app/checkContinuosData", {}, JSON.stringify(stompBody)); //parameters: destination, headers, body
   }
 
-  storeMessages(message) {
-      console.log('messageReceived')
-      this.drawGraph()
-  }
 
-  drawGraph(){
+  drawGraph(data_for_drawing){
     console.log('graph localization');
   
-    const x_nums = new Set();
-    while(x_nums.size !=3) {
-      x_nums.add(Math.ceil(Math.random() *5))
-    }
-    
-    const y_nums = new Set();
-    while(y_nums.size !=3) {
-      y_nums.add(Math.ceil(Math.random() *5))
-    }
-
-
     var data = [{
         type: 'bar',
-        x: [...x_nums],
-        y: [...y_nums]
+        x: data_for_drawing[0],
+        y: data_for_drawing[1]
     }]
 
-    var layout =  {width: 320, height: 240, title: 'A Fancy Plot'} 
+    var layout =  {width: 600, height: 500, title: 'Reduced Visualization'} 
     this.setState({reduced_drawing_data_state: data})
     this.setState({reduced_drawing_layout_state: layout})
   }
