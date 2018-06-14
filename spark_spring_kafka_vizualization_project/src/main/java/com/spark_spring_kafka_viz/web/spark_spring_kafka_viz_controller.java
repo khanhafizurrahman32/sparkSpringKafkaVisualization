@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -76,6 +77,12 @@ public class spark_spring_kafka_viz_controller {
     @RequestMapping("/getHeadersOfaFile")
     public String getHeadersList(@RequestParam(value="inputFilePath") String inputFilePath) {
         return fileService.getHeadersName(inputFilePath);
+    }
+
+    @CrossOrigin
+    @RequestMapping("/startProcessingFile")
+    public List<String> processFile(@RequestParam(value="inputFilePath") String inputFilePath) {
+        return fileService.contentsInJson(inputFilePath);
     }
 
     @MessageMapping("/checkContinuosData")

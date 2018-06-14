@@ -78,5 +78,20 @@ public class FileServiceImplementation implements FileServiceInterface {
         return headerNamesString;
     }
 
+    @Override
+    public List<String> contentsInJson(String inputFilePath) {
+        String absolutePath = UPLOADED_FOLDER + inputFilePath;
+        List<String> fileContents = new ArrayList<String>();
+        try {
+            Stream<String> csv_data_File_Stream = Files.lines(Paths.get(absolutePath)).skip(1);
+            fileContents = csv_data_File_Stream.collect(Collectors.toList());
+            fileContents.forEach(System.out::println);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return fileContents;
+    }
+
 
 }
