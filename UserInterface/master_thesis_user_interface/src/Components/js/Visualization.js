@@ -111,8 +111,6 @@ class Visualization extends Component {
     this.setState({drawingLayout_state: layout})
   }
 
-
-
   render() {
     console.log(this.state.headerFiles);
     if(this.state.headerFiles === ''){

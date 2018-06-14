@@ -26,7 +26,6 @@ class MultipleFormInput extends Component {
     this.createTopic = this.createTopic.bind(this);
     this.sendDatatoTopic = this.sendDatatoTopic.bind(this);
     this.startkafkasparkCommand = this.startkafkasparkCommand.bind(this);
-    this.passSelectedDataToVisualization = this.passSelectedDataToVisualization.bind(this);
     this.connect = this.connect.bind(this);
     this.disconnect = this.disconnect.bind(this);
     this.visualization = this.visualization.bind(this);
@@ -108,6 +107,7 @@ class MultipleFormInput extends Component {
 
   drawGraph(data_for_drawing){
     console.log('graph localization');
+    console.log(this.state.vizualization_method);
   
     var data = [{
         type: 'bar',
@@ -229,9 +229,6 @@ class MultipleFormInput extends Component {
   }
 
 
-  passSelectedDataToVisualization(){
-
-  }
   render() {
 
     return (
