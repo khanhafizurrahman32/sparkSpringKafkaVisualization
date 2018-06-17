@@ -51,6 +51,10 @@ class MultipleFormInput extends Component {
       }.bind(this)); 
   }
 
+  checkallElementsoofArrayEqualorNot(arr){
+    return new Set(arr).size == 1
+  }
+
   manipulateDataForDrawing(input_messages){
  
     let globalArray = [];
@@ -79,7 +83,8 @@ class MultipleFormInput extends Component {
         arr.push(elem[(Object.keys(input_array_json[0]))[i]]);
       })
       if(arr.length === 50){
-        globalArray.push(arr);
+        if (this.checkallElementsoofArrayEqualorNot(arr) != true)
+          globalArray.push(arr); 
         arr = []
       }
     }
