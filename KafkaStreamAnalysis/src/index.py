@@ -38,8 +38,20 @@ def inputSchema():
         StructField("class", StringType()), \
         StructField("emni", StringType())
     ])
+    a = StructType()
+    print type(a)
+    a = a.add("f1", "string", True)
+    b = StructType([StructField("f1", StringType(), True)]) # a == b == c
+    c = StructType().add("f1", "string", True)
     return schema
 
+def inputSchema2(fieldNameList, fieldTypeList):
+    schema = StructType()
+    j = 0
+    for i in fieldNameList:
+        schema = schema.add(fieldNameList[j], fieldTypeList[j])
+        j = j + 1
+    return schema
 
 def outputOfScikitLearnSchema():
     output_of_scikit_learn = StructType([
@@ -106,7 +118,7 @@ def arrangeDatasets(df, output_df):
     for x in remaining_cols:
         output_df[x] = 0
     return output_df
-    
+
 inputSchema_output = inputSchema()
 @pandas_udf(inputSchema_output, functionType=PandasUDFType.GROUPED_MAP)
 def traditional_LDA(df):
@@ -128,7 +140,6 @@ def traditional_LDA(df):
     output_df = renameCols(df,X_lda_sklearn_df)
     print(list(output_df))
     output_df = arrangeDatasets(df,output_df)
-
     outputAsJson(X_lda_sklearn_df)
     return output_df
 
@@ -175,7 +186,10 @@ def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_
     spark.conf.set("spark.sql.streaming.checkpointLocation", "/Users/khanhafizurrahman/Desktop/Thesis/code/Thesis_Implementation/checkPoint/test_writeStream_to_kafka")
     df = createInitialDataFrame(spark, kafka_bootstrap_server, subscribe_topic)
     df = df.selectExpr("CAST(value AS STRING)")
-    schema = inputSchema()
+    #schema = inputSchema()
+    fieldNameList = ["sepal_length_in_cm", "sepal_width_in_cm", "petal_length_in_cm", "petal_width_in_cm", "class", "emni"]
+    fieldTypeList = ["double", "double", "double", "double", "string", "string"]
+    schema = inputSchema2(fieldNameList, fieldTypeList)
     df1 = df.select(from_json(df.value, schema).alias("json"))
     df2 = df1.select('json.*')
     #df2_sub = df2.selectExpr("CAST(sepal_length_in_cm AS STRING) AS key","to_json(struct(*)) AS value")
@@ -193,12 +207,15 @@ if __name__ == '__main__':
     kafka_bootstrap_server = str(sys.argv[3])
     subscribe_topic = str(sys.argv[4])
     subscribe_output_topic = str(sys.argv[5])
+    #fieldNameListName = str(sys.argv([6]))
+    #fieldTypeListName = str(sys.argv([7]))
+
     #write_to_console_df,write_to_kafka_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
     write_to_console_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
     columns_of_the_schema = write_to_console_df.columns
     for column in columns_of_the_schema:
         pass
 
-    #test_writeStream_to_kafka(testDataFrame = write_to_console_df, kafka_bootstrap_server = kafka_bootstrap_server, output_topic = subscribe_output_topic)
-    writeStream(df3= write_to_console_df)
+    test_writeStream_to_kafka(testDataFrame = write_to_console_df, kafka_bootstrap_server = kafka_bootstrap_server, output_topic = subscribe_output_topic)
+    #writeStream(df3= write_to_console_df)
     #writeStreamtoKafka(df3= write_to_console_df, output_topic= subscribe_output_topic) # value of df3 will be changed to write_to_kafka_df
