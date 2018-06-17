@@ -119,29 +119,31 @@ def arrangeDatasets(df, output_df):
         output_df[x] = 0
     return output_df
 
-inputSchema_output = inputSchema()
-@pandas_udf(inputSchema_output, functionType=PandasUDFType.GROUPED_MAP)
-def traditional_LDA(df):
-    X1 = DataFrame(df['sepal_length_in_cm'])
-    X2 = DataFrame(df['sepal_width_in_cm'])
-    X3 = DataFrame(df['petal_length_in_cm'])
-    X4 = DataFrame(df['petal_width_in_cm'])
-    Y = DataFrame(df['class'])
-    y = np.ravel(Y.values)
-    enc = LabelEncoder()
-    label_encoder = enc.fit(y)
-    y = label_encoder.transform(y) + 1
-    X = concat([X1, X2, X3, X4], axis=1, ignore_index=True)
-    print 'ddd'
-    sklearn_lda = LDA()
-    X_lda_sklearn = sklearn_lda.fit_transform(X,y)
-    X_lda_sklearn_df = DataFrame(X_lda_sklearn) # pandas.core.frame.DataFrame
-    print(list(X_lda_sklearn_df))
-    output_df = renameCols(df,X_lda_sklearn_df)
-    print(list(output_df))
-    output_df = arrangeDatasets(df,output_df)
-    outputAsJson(X_lda_sklearn_df)
-    return output_df
+#inputSchema_output = inputSchema()
+def dimensionality_reduction(inputSchema_output):
+    @pandas_udf(inputSchema_output, functionType=PandasUDFType.GROUPED_MAP)
+    def traditional_LDA(df):
+        X1 = DataFrame(df['sepal_length_in_cm'])
+        X2 = DataFrame(df['sepal_width_in_cm'])
+        X3 = DataFrame(df['petal_length_in_cm'])
+        X4 = DataFrame(df['petal_width_in_cm'])
+        Y = DataFrame(df['class'])
+        y = np.ravel(Y.values)
+        enc = LabelEncoder()
+        label_encoder = enc.fit(y)
+        y = label_encoder.transform(y) + 1
+        X = concat([X1, X2, X3, X4], axis=1, ignore_index=True)
+        print 'ddd'
+        sklearn_lda = LDA()
+        X_lda_sklearn = sklearn_lda.fit_transform(X,y)
+        X_lda_sklearn_df = DataFrame(X_lda_sklearn) # pandas.core.frame.DataFrame
+        print(list(X_lda_sklearn_df))
+        output_df = renameCols(df,X_lda_sklearn_df)
+        print(list(output_df))
+        output_df = arrangeDatasets(df,output_df)
+        outputAsJson(X_lda_sklearn_df)
+        return output_df
+    return traditional_LDA
 
 @pandas_udf(output_of_scikit_learn, functionType=PandasUDFType.GROUPED_MAP)
 def flda(df):
@@ -194,6 +196,7 @@ def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_
     df2 = df1.select('json.*')
     #df2_sub = df2.selectExpr("CAST(sepal_length_in_cm AS STRING) AS key","to_json(struct(*)) AS value")
     #df2_sub_val = df2_sub.select('value') # only print the value of df2_sub
+    traditional_LDA = dimensionality_reduction(schema)
     df3 = df2.groupby("emni").apply(traditional_LDA)
     df3_sub = df3.selectExpr("CAST(sepal_length_in_cm AS STRING) AS key","to_json(struct(*)) AS value")
     #df4 = df2.groupby("emni").apply(flda)
