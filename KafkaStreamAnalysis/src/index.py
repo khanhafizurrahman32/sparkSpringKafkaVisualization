@@ -53,13 +53,6 @@ def inputSchema2(fieldNameList, fieldTypeList):
         j = j + 1
     return schema
 
-def outputOfScikitLearnSchema():
-    output_of_scikit_learn = StructType([
-        StructField("c1", DoubleType()),
-        StructField("c2", DoubleType()),
-    ])
-    return output_of_scikit_learn
-
 
 def getMean(X, XLabel):
     CLabel = np.unique(XLabel)
@@ -89,8 +82,6 @@ def outputOfFLDAAlgorithm(X,G):
     print(eigen_val_of_G)
     Y = np.dot(X,eigen_vec_of_G)
     return Y
-
-output_of_scikit_learn = outputOfScikitLearnSchema()
 
 def renameCols(df, output_df):
     input_cols = list(df)
@@ -134,7 +125,7 @@ def dimensionality_reduction(inputSchema_output):
         return output_df
     return traditional_LDA
 
-@pandas_udf(output_of_scikit_learn, functionType=PandasUDFType.GROUPED_MAP)
+@pandas_udf(inputSchema_output, functionType=PandasUDFType.GROUPED_MAP)
 def flda(df):
     X1 = DataFrame(df['sepal_length_in_cm'])
     X2 = DataFrame(df['sepal_width_in_cm'])
