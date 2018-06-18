@@ -60,14 +60,6 @@ def outputOfScikitLearnSchema():
     ])
     return output_of_scikit_learn
 
-def outputKafkaSchema():
-    output_kafka_schema = StructType([
-        StructField("key", StringType()),
-        StructField("value", StringType())
-    ])
-    return output_kafka_schema
-
-
 
 def getMean(X, XLabel):
     CLabel = np.unique(XLabel)
@@ -157,16 +149,12 @@ def flda(df):
     output_of_alg = outputOfFLDAAlgorithm(feature_data, G)
     return output_of_alg
 
-output_kafka_schema = outputKafkaSchema()
-
-
 def writeStream(df3):
     df3.writeStream \
         .format("console") \
         .option("truncate","false") \
         .start() \
         .awaitTermination()
-
 
 def test_writeStream_to_kafka(testDataFrame, kafka_bootstrap_server, output_topic):
     testDataFrame.printSchema()
@@ -178,7 +166,6 @@ def test_writeStream_to_kafka(testDataFrame, kafka_bootstrap_server, output_topi
         .option("topic", output_topic) \
         .start() \
         .awaitTermination()
-
 
 def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic):
     spark = createSparkSession(appName,master_server)
@@ -196,8 +183,6 @@ def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_
     #df4 = df2.groupby("emni").apply(flda)
     return df3_sub # should be df3, df4
 
-
-
 if __name__ == '__main__':
     appName = str(sys.argv[1])
     master_server = str(sys.argv[2])
@@ -206,13 +191,11 @@ if __name__ == '__main__':
     subscribe_output_topic = str(sys.argv[5])
     #fieldNameListName = str(sys.argv([6]))
     #fieldTypeListName = str(sys.argv([7]))
-
     #write_to_console_df,write_to_kafka_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
     write_to_console_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
     columns_of_the_schema = write_to_console_df.columns
     for column in columns_of_the_schema:
         pass
-
     test_writeStream_to_kafka(testDataFrame = write_to_console_df, kafka_bootstrap_server = kafka_bootstrap_server, output_topic = subscribe_output_topic)
     #writeStream(df3= write_to_console_df)
     #writeStreamtoKafka(df3= write_to_console_df, output_topic= subscribe_output_topic) # value of df3 will be changed to write_to_kafka_df
