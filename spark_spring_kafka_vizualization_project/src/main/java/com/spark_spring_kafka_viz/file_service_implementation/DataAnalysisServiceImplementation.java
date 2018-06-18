@@ -122,15 +122,19 @@ public class DataAnalysisServiceImplementation implements DataAnalysisServiceInt
         String kafka_bootstrap_server = parameters.get("kafka_bootstrap_server");
         String subscribe_topic = parameters.get("subscribe_topic");
         String subscribe_output_topic = parameters.get("subscribe_output_topic");
+        String fieldNameListNameAsString = parameters.get("fieldNameListNameAsString");
+        String fieldTypeListNameAsString = parameters.get("fieldTypeListNameAsString");
         System.out.println("inside submitPysparkProjectTerminalCommand");
-        System.out.println(app_name + '\t' +  master_server + '\t' + kafka_bootstrap_server + '\t' + subscribe_topic + '\t' + subscribe_output_topic);
+        System.out.println(app_name + '\t' +  master_server + '\t' + kafka_bootstrap_server + '\t' + subscribe_topic + '\t' + subscribe_output_topic + '\t' + fieldNameListNameAsString);
 
         String command_to_run = "sh /Users/khanhafizurrahman/Desktop/ThesisFinalCode/KafkaStreamAnalysis/spark_start.sh "
                 + app_name + " "
                 + master_server + " "
                 + kafka_bootstrap_server + " "
                 + subscribe_topic + " "
-                + subscribe_output_topic;
+                + subscribe_output_topic+ " "
+                + fieldNameListNameAsString+ " "
+                + fieldTypeListNameAsString;
 
         Runtime rt = Runtime.getRuntime();
         printOutput outputMessage, errorReported;

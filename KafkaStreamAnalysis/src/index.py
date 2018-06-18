@@ -143,14 +143,14 @@ def test_writeStream_to_kafka(testDataFrame, kafka_bootstrap_server, output_topi
         .start() \
         .awaitTermination()
 
-def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic):
+def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic,schema):
     spark = createSparkSession(appName,master_server)
     spark.conf.set("spark.sql.streaming.checkpointLocation", "/Users/khanhafizurrahman/Desktop/Thesis/code/Thesis_Implementation/checkPoint/test_writeStream_to_kafka")
     df = createInitialDataFrame(spark, kafka_bootstrap_server, subscribe_topic)
     df = df.selectExpr("CAST(value AS STRING)")
-    fieldNameList = ["sepal_length_in_cm", "sepal_width_in_cm", "petal_length_in_cm", "petal_width_in_cm", "class", "emni"]
+    """fieldNameList = ["sepal_length_in_cm", "sepal_width_in_cm", "petal_length_in_cm", "petal_width_in_cm", "class", "emni"]
     fieldTypeList = ["double", "double", "double", "double", "string", "string"]
-    schema = inputSchema2(fieldNameList, fieldTypeList)
+    schema = inputSchema2(fieldNameList, fieldTypeList)"""
     df1 = df.select(from_json(df.value, schema).alias("json"))
     df2 = df1.select('json.*')
     traditional_LDA = dimensionality_reduction(schema)
@@ -165,10 +165,19 @@ if __name__ == '__main__':
     kafka_bootstrap_server = str(sys.argv[3])
     subscribe_topic = str(sys.argv[4])
     subscribe_output_topic = str(sys.argv[5])
-    fieldNameListNameAsString = str(sys.argv([6]))
-    fieldTypeListNameAsString = str(sys.argv([7]))
+    fieldNameListNameAsString = str(sys.argv[6])
+    fieldNames = map(str,fieldNameListNameAsString.strip('[]').split(','))
+    fieldNameList = []
+    for i in fieldNames:
+        fieldNameList.append(i.replace("\"","")) 
+    fieldTypeListNameAsString = str(sys.argv[7])
+    fieldTypes = map(str,fieldTypeListNameAsString.strip('[]').split(','))
+    fieldTypeList = []
+    for i in fieldTypes:
+        fieldTypeList.append(i.replace("\"",""))
+    schema = inputSchema2(fieldNameList, fieldTypeList)
     #write_to_console_df,write_to_kafka_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
-    write_to_console_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
+    write_to_console_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic, schema)
     columns_of_the_schema = write_to_console_df.columns
     for column in columns_of_the_schema:
         pass

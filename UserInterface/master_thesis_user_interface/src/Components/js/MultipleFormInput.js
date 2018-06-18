@@ -201,7 +201,13 @@ class MultipleFormInput extends Component {
       url: "http://localhost:8080/api/startPythonCommandShell",
       cache: 'false',
       method: 'POST',
-      data: {app_name:'learning01', master_server:'local[*]', kafka_bootstrap_server: '127.0.0.1:9092', subscribe_topic: this.state.topic_name,  subscribe_output_topic: this.state.topic_output_name},
+      data: {app_name:'learning01', 
+             master_server:'local[*]', 
+             kafka_bootstrap_server: '127.0.0.1:9092', 
+             subscribe_topic: this.state.topic_name,  
+             subscribe_output_topic: this.state.topic_output_name,
+             fieldNameListNameAsString: "[\"sepal_length_in_cm\",\"sepal_width_in_cm\",\"petal_length_in_cm\",\"petal_width_in_cm\",\"class\",\"emni\"]",
+             fieldTypeListNameAsString: "[\"double\",\"double\",\"double\",\"double\",\"string\",\"string\"]"},
       success: function(data){
       }.bind(this),
       error: function(xhr, status, err){
