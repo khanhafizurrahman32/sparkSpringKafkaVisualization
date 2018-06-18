@@ -29,22 +29,6 @@ def createInitialDataFrame(spark, kafka_bootstrap_server, subscribe_topic):
         .load()
     return df
 
-def inputSchema():
-    schema = StructType([
-        StructField("sepal_length_in_cm", DoubleType()), \
-        StructField("sepal_width_in_cm", DoubleType()), \
-        StructField("petal_length_in_cm", DoubleType()), \
-        StructField("petal_width_in_cm", DoubleType()), \
-        StructField("class", StringType()), \
-        StructField("emni", StringType())
-    ])
-    a = StructType()
-    print type(a)
-    a = a.add("f1", "string", True)
-    b = StructType([StructField("f1", StringType(), True)]) # a == b == c
-    c = StructType().add("f1", "string", True)
-    return schema
-
 def inputSchema2(fieldNameList, fieldTypeList):
     schema = StructType()
     j = 0
@@ -120,25 +104,26 @@ def dimensionality_reduction(inputSchema_output):
         print(list(X_lda_sklearn_df))
         output_df = renameCols(df,X_lda_sklearn_df)
         print(list(output_df))
-        output_df = arrangeDatasets(df,output_df)
-        outputAsJson(X_lda_sklearn_df)
+        output_df = arrangeDatasets(df,output_df) 
         return output_df
     return traditional_LDA
 
-@pandas_udf(inputSchema_output, functionType=PandasUDFType.GROUPED_MAP)
-def flda(df):
-    X1 = DataFrame(df['sepal_length_in_cm'])
-    X2 = DataFrame(df['sepal_width_in_cm'])
-    X3 = DataFrame(df['petal_length_in_cm'])
-    X4 = DataFrame(df['petal_width_in_cm'])
-    feature_data = concat([X1, X2, X3, X4], axis=1, ignore_index=True)
-    feature_data = feature_data.values
-    feature_data = feature_data.T
-    feature_label_data = np.ravel((df['class']))
-    feature_label_data = feature_label_data.T
-    G, Q, C = FLDA_Cholesky(feature_data, feature_label_data)
-    output_of_alg = outputOfFLDAAlgorithm(feature_data, G)
-    return output_of_alg
+def dimensionality_reduction_FLDA(inputSchema_output):
+    @pandas_udf(inputSchema_output, functionType=PandasUDFType.GROUPED_MAP)
+    def flda(df):
+        X1 = DataFrame(df['sepal_length_in_cm'])
+        X2 = DataFrame(df['sepal_width_in_cm'])
+        X3 = DataFrame(df['petal_length_in_cm'])
+        X4 = DataFrame(df['petal_width_in_cm'])
+        feature_data = concat([X1, X2, X3, X4], axis=1, ignore_index=True)
+        feature_data = feature_data.values
+        feature_data = feature_data.T
+        feature_label_data = np.ravel((df['class']))
+        feature_label_data = feature_label_data.T
+        G, Q, C = FLDA_Cholesky(feature_data, feature_label_data)
+        output_of_alg = outputOfFLDAAlgorithm(feature_data, G)
+        return output_of_alg
+    return flda
 
 def writeStream(df3):
     df3.writeStream \
@@ -180,8 +165,8 @@ if __name__ == '__main__':
     kafka_bootstrap_server = str(sys.argv[3])
     subscribe_topic = str(sys.argv[4])
     subscribe_output_topic = str(sys.argv[5])
-    #fieldNameListName = str(sys.argv([6]))
-    #fieldTypeListName = str(sys.argv([7]))
+    fieldNameListNameAsString = str(sys.argv([6]))
+    fieldTypeListNameAsString = str(sys.argv([7]))
     #write_to_console_df,write_to_kafka_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
     write_to_console_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
     columns_of_the_schema = write_to_console_df.columns
