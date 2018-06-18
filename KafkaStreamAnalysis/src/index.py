@@ -148,9 +148,6 @@ def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_
     spark.conf.set("spark.sql.streaming.checkpointLocation", "/Users/khanhafizurrahman/Desktop/Thesis/code/Thesis_Implementation/checkPoint/test_writeStream_to_kafka")
     df = createInitialDataFrame(spark, kafka_bootstrap_server, subscribe_topic)
     df = df.selectExpr("CAST(value AS STRING)")
-    """fieldNameList = ["sepal_length_in_cm", "sepal_width_in_cm", "petal_length_in_cm", "petal_width_in_cm", "class", "emni"]
-    fieldTypeList = ["double", "double", "double", "double", "string", "string"]
-    schema = inputSchema2(fieldNameList, fieldTypeList)"""
     df1 = df.select(from_json(df.value, schema).alias("json"))
     df2 = df1.select('json.*')
     traditional_LDA = dimensionality_reduction(schema)
