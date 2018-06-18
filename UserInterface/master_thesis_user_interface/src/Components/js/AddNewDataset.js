@@ -28,7 +28,7 @@ class AddNewDataset extends Component {
   }
 
   fileUpload(file){
-    const url = 'http://localhost:8080/upload/toaFixedPlace';
+    const url = 'http://localhost:8080/api/toaFixedPlace';
     const formData = new FormData();
     formData.append('file',file)
     const config = {

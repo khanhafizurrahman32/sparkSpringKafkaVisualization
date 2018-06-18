@@ -29,7 +29,7 @@ class DataSetSelection extends Component {
 
   fetchDataFromDirectory(){
     $.ajax({
-      url: 'http://localhost:8080/upload/readAllFiles',
+      url: 'http://localhost:8080/api/readAllFiles',
       dataType: 'json',
       cache: 'false',
       success: function(data){
