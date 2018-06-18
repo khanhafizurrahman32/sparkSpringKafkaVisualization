@@ -67,9 +67,7 @@ def outputKafkaSchema():
     ])
     return output_kafka_schema
 
-# a tester method to save the contents to output file
-def outputAsJson(pd_df):
-    json_string = pd_df.to_json(path_or_buf='/Users/khanhafizurrahman/Desktop/Thesis/code/Thesis_Implementation/kafkaStreamAnalysis/output_json/test2.json',orient= 'split')
+
 
 def getMean(X, XLabel):
     CLabel = np.unique(XLabel)
@@ -119,7 +117,6 @@ def arrangeDatasets(df, output_df):
         output_df[x] = 0
     return output_df
 
-#inputSchema_output = inputSchema()
 def dimensionality_reduction(inputSchema_output):
     @pandas_udf(inputSchema_output, functionType=PandasUDFType.GROUPED_MAP)
     def traditional_LDA(df):
@@ -188,14 +185,11 @@ def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_
     spark.conf.set("spark.sql.streaming.checkpointLocation", "/Users/khanhafizurrahman/Desktop/Thesis/code/Thesis_Implementation/checkPoint/test_writeStream_to_kafka")
     df = createInitialDataFrame(spark, kafka_bootstrap_server, subscribe_topic)
     df = df.selectExpr("CAST(value AS STRING)")
-    #schema = inputSchema()
     fieldNameList = ["sepal_length_in_cm", "sepal_width_in_cm", "petal_length_in_cm", "petal_width_in_cm", "class", "emni"]
     fieldTypeList = ["double", "double", "double", "double", "string", "string"]
     schema = inputSchema2(fieldNameList, fieldTypeList)
     df1 = df.select(from_json(df.value, schema).alias("json"))
     df2 = df1.select('json.*')
-    #df2_sub = df2.selectExpr("CAST(sepal_length_in_cm AS STRING) AS key","to_json(struct(*)) AS value")
-    #df2_sub_val = df2_sub.select('value') # only print the value of df2_sub
     traditional_LDA = dimensionality_reduction(schema)
     df3 = df2.groupby("emni").apply(traditional_LDA)
     df3_sub = df3.selectExpr("CAST(sepal_length_in_cm AS STRING) AS key","to_json(struct(*)) AS value")
