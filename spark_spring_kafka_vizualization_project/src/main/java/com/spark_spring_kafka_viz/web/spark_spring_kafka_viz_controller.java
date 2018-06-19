@@ -41,7 +41,7 @@ public class spark_spring_kafka_viz_controller {
          return fileService.findAll();
      }
 
-    @CrossOrigin
+    @CrossOrigin(origins = "http://localhost:3000")
     @RequestMapping(value = "/toaFixedPlace", method = RequestMethod.POST )
     public @ResponseBody ResponseMetaData handleFileUpload(@RequestParam(value="file") MultipartFile multipartFile) throws IOException {
         return fileService.save(multipartFile);
@@ -75,7 +75,7 @@ public class spark_spring_kafka_viz_controller {
 
     @CrossOrigin
     @RequestMapping("/getHeadersOfaFile")
-    public String getHeadersList(@RequestParam(value="inputFilePath") String inputFilePath) {
+    public List<List<String>> getHeadersList(@RequestParam(value="inputFilePath") String inputFilePath) {
         return fileService.getHeadersName(inputFilePath);
     }
 
@@ -83,6 +83,12 @@ public class spark_spring_kafka_viz_controller {
     @RequestMapping("/startProcessingFile")
     public List<String> processFile(@RequestParam(value="inputFilePath") String inputFilePath) {
         return fileService.contentsInJson(inputFilePath);
+    }
+
+    @CrossOrigin
+    @RequestMapping("/preprocessingFile")
+    public String startPreprocessing(@RequestParam(value="inputFilePath") String inputFilePath){
+        return fileService.preprocessOriginalFile(inputFilePath);
     }
 
     @MessageMapping("/checkContinuosData")

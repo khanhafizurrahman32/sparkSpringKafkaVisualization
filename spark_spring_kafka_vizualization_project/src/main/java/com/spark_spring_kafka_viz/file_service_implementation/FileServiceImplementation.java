@@ -13,9 +13,15 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.supercsv.io.CsvMapReader;
+import org.supercsv.io.CsvMapWriter;
+import org.supercsv.io.ICsvMapReader;
+import org.supercsv.io.ICsvMapWriter;
+import org.supercsv.prefs.CsvPreference;
 
 /**
  * Created by khanhafizurrahman on 10/6/18.
@@ -57,9 +63,10 @@ public class FileServiceImplementation implements FileServiceInterface {
     }
 
     @Override
-    public String getHeadersName(String inputFilePath) {
+    public List<List<String>> getHeadersName(String inputFilePath) {
         String absolutePath = UPLOADED_FOLDER + inputFilePath;
         List<String> headerNames = new ArrayList<String>();
+        List<List<String>> schemasOfFile = new ArrayList<>();
         String headerNamesString = "";
         try {
             File inputF = new File(absolutePath);
@@ -76,8 +83,10 @@ public class FileServiceImplementation implements FileServiceInterface {
         {
             headerNamesString += s + ",";
         }
-        contentsOfFirstLine(inputFilePath);
-        return headerNamesString;
+        List<String> fileTypes = contentsOfFirstLine(inputFilePath);
+        schemasOfFile.add(headerNames);
+        schemasOfFile.add(fileTypes);
+        return schemasOfFile;
     }
 
     private List<String> contentsOfFirstLine(String inputFilePath){
@@ -99,7 +108,7 @@ public class FileServiceImplementation implements FileServiceInterface {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return firstLineList;
+        return fieldTypes;
     }
 
     private String checkwhetherStringConvertableOrnot(String s) {
@@ -163,6 +172,59 @@ public class FileServiceImplementation implements FileServiceInterface {
             e.printStackTrace();
         }
         return fileContents;
+    }
+
+    @Override
+    public String preprocessOriginalFile(String inputFilePath) {
+        String absolutePath = UPLOADED_FOLDER + inputFilePath;
+        String outputFilePath = inputFilePath.replace(".csv","") + "_output.csv";
+        String absoluteOutputFilePath = UPLOADED_FOLDER + outputFilePath;
+        checkFileExistOrNot(absoluteOutputFilePath);
+        ICsvMapReader mapReader = null;
+        ICsvMapWriter mapWriter = null;
+        CsvPreference prefs = CsvPreference.STANDARD_PREFERENCE;
+        try {
+            mapReader = new CsvMapReader(new FileReader(absolutePath),prefs);
+            mapWriter = new CsvMapWriter(new FileWriter(absoluteOutputFilePath),prefs);
+            final String[] readHeader = mapReader.getHeader(true);
+            final String[] writeHeader = new String[readHeader.length + 1];
+            System.arraycopy(readHeader, 0, writeHeader, 0, readHeader.length);
+            final String defaultHeader = "defaultHeader";
+            writeHeader[writeHeader.length -1] = defaultHeader;
+            mapWriter.writeHeader(writeHeader);
+            Map<String, String> row;
+            while( (row = mapReader.read(readHeader)) !=null) {
+                row.put(defaultHeader,"defaultValue");
+                mapWriter.write(row, writeHeader);
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e){
+            e.printStackTrace();;
+        } finally {
+            if (mapReader != null){
+                try {
+                    mapReader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (mapWriter != null) {
+                try {
+                    mapWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return outputFilePath;
+    }
+
+    private void checkFileExistOrNot(String absoluteOutputFilePath) {
+        File outputFile = new File(absoluteOutputFilePath);
+        if (outputFile.exists() && !outputFile.isDirectory()){
+            outputFile.delete();
+        }
     }
 
 
