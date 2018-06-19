@@ -15,14 +15,7 @@ class AddNewDataset extends Component {
     this.fileUpload = this.fileUpload.bind(this)
   }
 
-  /*onFormSubmit(e){
-    e.preventDefault()
-    this.fileUpload(this.state.file).then((response) => {
-      console.log(response.data);
-    }).catch((fromReject) => {
-      console.log(fromReject)
-    })
-  }*/
+
 
   onFormSubmit(e){
     e.preventDefault();
@@ -39,17 +32,6 @@ class AddNewDataset extends Component {
     this.setState({file:e.target.files[0]})
   }
 
-  fileUpload(file){
-    const url = 'http://localhost:8080/api/toaFixedPlace';
-    const formData = new FormData();
-    formData.append('file',file)
-    const config = {
-      headers: {
-        'content-type': 'multipart/form-data'
-      }
-    }
-    return post(url, formData, config)
-  }
   render() {
     let formDiv;
     formDiv = <div>
