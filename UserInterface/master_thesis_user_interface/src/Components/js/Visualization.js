@@ -32,8 +32,6 @@ class Visualization extends Component {
       dataType: 'text',
       success: function(data){
         console.log(data);
-        sessionStorage.removeItem('currentFile');
-        sessionStorage.setItem('currentFile', data)
       },
       error: function(xhr, status, err){
         console.log(xhr, status, err);
@@ -88,7 +86,7 @@ class Visualization extends Component {
   		for (var j = 0; j < (header_of_file.length); j++){
   			obj[''+header_of_file[j]+''] = containFileList[j];
   		}
-		  objArray.push(obj);
+      objArray.push(obj);
       this.setState({ContentsInJsonArray: objArray});
 	  } 
   }
