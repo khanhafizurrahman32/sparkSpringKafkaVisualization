@@ -87,17 +87,9 @@ def arrangeDatasets(df, output_df):
 def dimensionality_reduction(inputSchema_output):
     @pandas_udf(inputSchema_output, functionType=PandasUDFType.GROUPED_MAP)
     def traditional_LDA(df):
-        X1 = DataFrame(df['sepal_length_in_cm'])
-        X2 = DataFrame(df['sepal_width_in_cm'])
-        X3 = DataFrame(df['petal_length_in_cm'])
-        X4 = DataFrame(df['petal_width_in_cm'])
         Y = DataFrame(df['class'])
         y = np.ravel(Y.values)
-        enc = LabelEncoder()
-        label_encoder = enc.fit(y)
-        y = label_encoder.transform(y) + 1
-        X = concat([X1, X2, X3, X4], axis=1, ignore_index=True)
-        print 'ddd'
+        X = df.drop(['class','defaultHeader'], axis=1)
         sklearn_lda = LDA()
         X_lda_sklearn = sklearn_lda.fit_transform(X,y)
         X_lda_sklearn_df = DataFrame(X_lda_sklearn) # pandas.core.frame.DataFrame
@@ -111,15 +103,9 @@ def dimensionality_reduction(inputSchema_output):
 def dimensionality_reduction_FLDA(inputSchema_output):
     @pandas_udf(inputSchema_output, functionType=PandasUDFType.GROUPED_MAP)
     def flda(df):
-        X1 = DataFrame(df['sepal_length_in_cm'])
-        X2 = DataFrame(df['sepal_width_in_cm'])
-        X3 = DataFrame(df['petal_length_in_cm'])
-        X4 = DataFrame(df['petal_width_in_cm'])
-        feature_data = concat([X1, X2, X3, X4], axis=1, ignore_index=True)
-        feature_data = feature_data.values
-        feature_data = feature_data.T
         feature_label_data = np.ravel((df['class']))
         feature_label_data = feature_label_data.T
+        feature_data = df.drop(['class','defaultHeader'], axis=1).values.T
         G, Q, C = FLDA_Cholesky(feature_data, feature_label_data)
         output_of_alg = outputOfFLDAAlgorithm(feature_data, G)
         return output_of_alg
@@ -143,7 +129,7 @@ def test_writeStream_to_kafka(testDataFrame, kafka_bootstrap_server, output_topi
         .start() \
         .awaitTermination()
 
-def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic,schema):
+def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic,schema,fieldNameList):
     spark = createSparkSession(appName,master_server)
     spark.conf.set("spark.sql.streaming.checkpointLocation", "/Users/khanhafizurrahman/Desktop/Thesis/code/Thesis_Implementation/checkPoint/test_writeStream_to_kafka")
     df = createInitialDataFrame(spark, kafka_bootstrap_server, subscribe_topic)
@@ -151,8 +137,9 @@ def kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_
     df1 = df.select(from_json(df.value, schema).alias("json"))
     df2 = df1.select('json.*')
     traditional_LDA = dimensionality_reduction(schema)
-    df3 = df2.groupby("emni").apply(traditional_LDA)
-    df3_sub = df3.selectExpr("CAST(sepal_length_in_cm AS STRING) AS key","to_json(struct(*)) AS value")
+    df3 = df2.groupby("defaultHeader").apply(traditional_LDA)
+    field_id = fieldNameList[0]
+    df3_sub = df3.selectExpr("CAST("+field_id+" AS STRING) AS key","to_json(struct(*)) AS value")
     #df4 = df2.groupby("emni").apply(flda)
     return df3_sub # should be df3, df4
 
@@ -174,7 +161,7 @@ if __name__ == '__main__':
         fieldTypeList.append(i.replace("\"",""))
     schema = inputSchema2(fieldNameList, fieldTypeList)
     #write_to_console_df,write_to_kafka_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic)
-    write_to_console_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic, schema)
+    write_to_console_df = kafkaAnalysisProcess(appName,master_server,kafka_bootstrap_server,subscribe_topic, schema, fieldNameList)
     columns_of_the_schema = write_to_console_df.columns
     for column in columns_of_the_schema:
         pass
