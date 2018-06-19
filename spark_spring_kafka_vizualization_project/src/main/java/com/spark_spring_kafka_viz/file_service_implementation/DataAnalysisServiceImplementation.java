@@ -95,12 +95,6 @@ public class DataAnalysisServiceImplementation implements DataAnalysisServiceInt
                         lineNode.put(fieldNameArray[i],parts_by_parts[i]);
                     }
                 }
-                /*lineNode.put("sepal_length_in_cm", Float.parseFloat(parts_by_parts [0]));
-                lineNode.put("sepal_width_in_cm", Float.parseFloat(parts_by_parts[1]));
-                lineNode.put("petal_length_in_cm", Float.parseFloat(parts_by_parts[2]));
-                lineNode.put("petal_width_in_cm", Float.parseFloat(parts_by_parts[3]));
-                lineNode.put("class", parts_by_parts[4]);
-                lineNode.put("emni", "dummyClass");*/
                 final ProducerRecord<String, String> csv_record =
                         new ProducerRecord<String, String>(csv_injest_topic, UUID.randomUUID().toString(), lineNode.toString());
 
