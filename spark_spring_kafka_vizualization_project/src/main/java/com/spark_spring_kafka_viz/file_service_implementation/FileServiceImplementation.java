@@ -23,6 +23,8 @@ import org.supercsv.io.ICsvMapReader;
 import org.supercsv.io.ICsvMapWriter;
 import org.supercsv.prefs.CsvPreference;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 /**
  * Created by khanhafizurrahman on 10/6/18.
  */
@@ -198,6 +200,7 @@ public class FileServiceImplementation implements FileServiceInterface {
                 row.put(defaultHeader,"defaultValue");
                 mapWriter.write(row, writeHeader);
             }
+            renameFileandDeleteExistingFile(inputFilePath, outputFilePath);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e){
@@ -219,6 +222,15 @@ public class FileServiceImplementation implements FileServiceInterface {
             }
         }
         return outputFilePath;
+    }
+
+    private void renameFileandDeleteExistingFile(String inputFilePath, String outputFilePath) {
+        Path source = Paths.get(UPLOADED_FOLDER + outputFilePath);
+        try {
+            Files.move(source, source.resolveSibling(inputFilePath), REPLACE_EXISTING);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private void checkFileExistOrNot(String absoluteOutputFilePath) {
