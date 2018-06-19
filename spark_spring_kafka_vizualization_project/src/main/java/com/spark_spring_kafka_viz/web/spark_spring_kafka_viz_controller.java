@@ -60,10 +60,6 @@ public class spark_spring_kafka_viz_controller {
     @CrossOrigin
     @RequestMapping("/sendDatatoKafka")
     public void sendData(@RequestParam Map<String, String> parameters) {
-
-        System.out.println(parameters.get("kafka_broker_end_point"));
-        System.out.println(parameters.get("csv_input_file"));
-        System.out.println(parameters.get("topic_name"));
         dataAnalysisService.sendDataToKafkaTopic(parameters);
     }
 

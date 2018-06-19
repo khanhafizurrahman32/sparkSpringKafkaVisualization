@@ -59,9 +59,13 @@ public class DataAnalysisServiceImplementation implements DataAnalysisServiceInt
         kafka_broker_end_point = parameters.get("kafka_broker_end_point");
         csv_input_File = parameters.get("csv_input_file");
         csv_input_File = UPLOADED_FOLDER + csv_input_File;
+        String [] fieldNameList = parameters.get("fieldNameListNameAsString").split(",");
+        System.out.println("fieldNameList");
+        System.out.println(fieldNameList.length);
+        String [] fieldTypeList = parameters.get("fieldTypeListNameAsString").split(",");
         System.out.println(csv_input_File);
         csv_injest_topic = parameters.get("topic_name");
-        publishCSVFileData();
+        publishCSVFileData(fieldNameList, fieldTypeList);
     }
 
     private Producer<String,String> createKafkaProducer() {
@@ -73,7 +77,7 @@ public class DataAnalysisServiceImplementation implements DataAnalysisServiceInt
         return new KafkaProducer<String, String>(prop);
     }
 
-    private void publishCSVFileData() {
+    private void publishCSVFileData(String [] fieldNameArray, String [] fieldTypeArray) {
         final Producer<String, String> csv_data_producer = createKafkaProducer();
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         ObjectNode lineNode = JsonNodeFactory.instance.objectNode();
@@ -84,12 +88,19 @@ public class DataAnalysisServiceImplementation implements DataAnalysisServiceInt
             csv_data_File_Stream.forEach(line -> {
                 String [] parts_by_parts = line.split(",");
 
-                lineNode.put("sepal_length_in_cm", Float.parseFloat(parts_by_parts [0]));
+                for (int i=0; i < fieldNameArray.length; i++){
+                    if (fieldTypeArray[i].equals("double")){
+                        lineNode.put(fieldNameArray[i],Float.parseFloat(parts_by_parts [i]));
+                    }else{
+                        lineNode.put(fieldNameArray[i],parts_by_parts[i]);
+                    }
+                }
+                /*lineNode.put("sepal_length_in_cm", Float.parseFloat(parts_by_parts [0]));
                 lineNode.put("sepal_width_in_cm", Float.parseFloat(parts_by_parts[1]));
                 lineNode.put("petal_length_in_cm", Float.parseFloat(parts_by_parts[2]));
                 lineNode.put("petal_width_in_cm", Float.parseFloat(parts_by_parts[3]));
                 lineNode.put("class", parts_by_parts[4]);
-                lineNode.put("emni", "dummyClass");
+                lineNode.put("emni", "dummyClass");*/
                 final ProducerRecord<String, String> csv_record =
                         new ProducerRecord<String, String>(csv_injest_topic, UUID.randomUUID().toString(), lineNode.toString());
 
@@ -125,7 +136,7 @@ public class DataAnalysisServiceImplementation implements DataAnalysisServiceInt
         String fieldNameListNameAsString = parameters.get("fieldNameListNameAsString");
         String fieldTypeListNameAsString = parameters.get("fieldTypeListNameAsString");
         System.out.println("inside submitPysparkProjectTerminalCommand");
-        System.out.println(app_name + '\t' +  master_server + '\t' + kafka_bootstrap_server + '\t' + subscribe_topic + '\t' + subscribe_output_topic + '\t' + fieldNameListNameAsString);
+        System.out.println(app_name + '\t' +  master_server + '\t' + kafka_bootstrap_server + '\t' + subscribe_topic + '\t' + subscribe_output_topic + '\t' + fieldNameListNameAsString + '\t' + fieldTypeListNameAsString);
 
         String command_to_run = "sh /Users/khanhafizurrahman/Desktop/ThesisFinalCode/KafkaStreamAnalysis/spark_start.sh "
                 + app_name + " "
