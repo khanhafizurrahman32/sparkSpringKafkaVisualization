@@ -14,6 +14,7 @@ import java.util.List;
 public interface FileServiceInterface {
     ArrayList<FileDescription> findAll();
     ResponseMetaData save (MultipartFile multipartFile) throws IOException;
-    String getHeadersName(String inputFilePath);
+    List<List<String>> getHeadersName(String inputFilePath);
     List<String> contentsInJson(String inputFilePath);
+    String preprocessOriginalFile(String inputFilePath);
 }

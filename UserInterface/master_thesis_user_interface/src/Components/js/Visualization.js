@@ -9,6 +9,7 @@ class Visualization extends Component {
     super(props);
     this.state= {
       headerFiles :'',
+      fileTypes:'',
       currentFileTobProcessed: '',
       ContentsInJsonArray: [],
       drawingData_state: [],
@@ -16,21 +17,42 @@ class Visualization extends Component {
     }
     this.getHeaderFiles = this.getHeaderFiles.bind(this);
     this.getContentsOfTheFiles = this.getContentsOfTheFiles.bind(this);
+    this.startPreprocessingFile = this.startPreprocessingFile.bind(this);
     this.createJsonContainingHeader_n_Contents = this.createJsonContainingHeader_n_Contents.bind(this);
     //this.getCurrentFile = this.getCurrentFile.bind(this);
     this.startRawDataVisualization = this.startRawDataVisualization.bind(this);
     this.unpackRows = this.unpackRows.bind(this);
   }
 
+  startPreprocessingFile(){
+    var currentFileTobProcessed = sessionStorage.getItem('currentFile');
+    $.ajax({
+      url: "http://localhost:8080/api/preprocessingFile",
+      data: {'inputFilePath': currentFileTobProcessed},
+      dataType: 'text',
+      success: function(data){
+        console.log(data);
+        sessionStorage.removeItem('currentFile');
+        sessionStorage.setItem('currentFile', data)
+      },
+      error: function(xhr, status, err){
+        console.log(xhr, status, err);
+      }
+    })
+  }
   getHeaderFiles(){
     var currentFileTobProcessed = sessionStorage.getItem('currentFile');
     $.ajax({
       url: "http://localhost:8080/api/getHeadersOfaFile",
       data: {'inputFilePath': currentFileTobProcessed},
-      dataType: 'text',
+      dataType: 'json',
       success: function(data){
+        console.log(data)
+        sessionStorage.setItem('fieldNames', data[0]);
+        sessionStorage.setItem('fieldTypes', data[1]);
         this.setState({
-          headerFiles : data.slice(0,-1)
+          headerFiles : data[0],
+          fileTypes : data[1]
         })
       }.bind(this),
       error: function(xhr, status, err){
@@ -58,18 +80,20 @@ class Visualization extends Component {
   }
 
   createJsonContainingHeader_n_Contents(header_of_file,contents_of_file){
-    var headerList = header_of_file.split(',');
+    //var headerList = header_of_file.split(',');
   	var objArray = [];
   	for (var i =0; i< contents_of_file.length; i++){
   		var containFileList = contents_of_file[i].split(',');
   		var obj = {};
-  		for (var j = 0; j < (headerList.length); j++){
-  			obj[''+headerList[j]+''] = containFileList[j];
+  		for (var j = 0; j < (header_of_file.length); j++){
+  			obj[''+header_of_file[j]+''] = containFileList[j];
   		}
 		  objArray.push(obj);
       this.setState({ContentsInJsonArray: objArray});
 	  } 
   }
+
+ 
 
   unpackRows(rows, key){
     return rows.map(function(row){
@@ -112,11 +136,11 @@ class Visualization extends Component {
   }
 
   render() {
-    console.log(this.state.headerFiles);
     if(this.state.headerFiles === ''){
       return (
         <div className='patient'>
           <label> Process Data For Visualization: </label> &nbsp; &nbsp;
+          <input type="button" onClick={this.startPreprocessingFile} value="Preprocessing Of The File" /> &nbsp; &nbsp;
           <input type="button" onClick={this.getHeaderFiles} value="Schema Of The File" /> &nbsp; &nbsp;
           <input type="button" onClick={this.getContentsOfTheFiles} value="Contains Of The File" />
           <br /> <br />
