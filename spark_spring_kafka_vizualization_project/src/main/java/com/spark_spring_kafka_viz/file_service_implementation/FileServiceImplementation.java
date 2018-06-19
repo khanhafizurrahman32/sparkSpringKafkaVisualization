@@ -178,8 +178,12 @@ public class FileServiceImplementation implements FileServiceInterface {
 
 
     @Override
-    public String preprocessOriginalFile(String inputFilePath) {
+    public void preprocessOriginalFile(String inputFilePath) {
         String absolutePath = UPLOADED_FOLDER + inputFilePath;
+        if (checkAlreadyModifiedOrnot(absolutePath)){
+            System.out.println("already exists!!!");
+            return;
+        }
         String outputFilePath = inputFilePath.replace(".csv","") + "_output.csv";
         String absoluteOutputFilePath = UPLOADED_FOLDER + outputFilePath;
         checkFileExistOrNot(absoluteOutputFilePath);
@@ -221,7 +225,27 @@ public class FileServiceImplementation implements FileServiceInterface {
                 }
             }
         }
-        return outputFilePath;
+    }
+
+    private boolean checkAlreadyModifiedOrnot(String absolutePath) {
+        List<String> headerNames = new ArrayList<>();
+        try {
+            File inputF = new File(absolutePath);
+            InputStream inputFS = new FileInputStream(inputF);
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputFS));
+
+            headerNames = Stream.of(br.readLine()).map(line -> line.split(","))
+                    .flatMap(Arrays:: stream).collect(Collectors.toList());
+
+        } catch (Exception e) {
+            // TODO: handle exception
+        }
+
+        if (headerNames.contains(("defaultHeader"))) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     private void renameFileandDeleteExistingFile(String inputFilePath, String outputFilePath) {

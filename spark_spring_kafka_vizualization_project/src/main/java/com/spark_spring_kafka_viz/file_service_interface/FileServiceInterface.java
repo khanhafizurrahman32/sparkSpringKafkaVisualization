@@ -16,5 +16,5 @@ public interface FileServiceInterface {
     ResponseMetaData save (MultipartFile multipartFile) throws IOException;
     List<List<String>> getHeadersName(String inputFilePath);
     List<String> contentsInJson(String inputFilePath);
-    String preprocessOriginalFile(String inputFilePath);
+    void preprocessOriginalFile(String inputFilePath);
 }

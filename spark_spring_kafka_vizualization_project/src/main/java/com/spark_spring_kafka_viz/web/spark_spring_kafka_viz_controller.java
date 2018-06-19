@@ -87,8 +87,8 @@ public class spark_spring_kafka_viz_controller {
 
     @CrossOrigin
     @RequestMapping("/preprocessingFile")
-    public String startPreprocessing(@RequestParam(value="inputFilePath") String inputFilePath){
-        return fileService.preprocessOriginalFile(inputFilePath);
+    public void startPreprocessing(@RequestParam(value="inputFilePath") String inputFilePath){
+        fileService.preprocessOriginalFile(inputFilePath);
     }
 
     @MessageMapping("/checkContinuosData")
