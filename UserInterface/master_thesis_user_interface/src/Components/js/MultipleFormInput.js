@@ -3,6 +3,7 @@ import $ from 'jquery';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
 import Plot from 'react-plotly.js';
+import { SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG } from 'constants';
 
 let stompClient;
 class MultipleFormInput extends Component {
@@ -18,7 +19,9 @@ class MultipleFormInput extends Component {
       selectedOption: '',
       reduced_drawing_data_state: [],
       reduced_drawing_layout_state: {},
-      stompClient: ''
+      stompClient: '',
+      fieldNames: [{name: '', type: ''}],
+      fieldTypes: [{name: ''}]
     };
 
     this.handleInputChange = this.handleInputChange.bind(this);
@@ -149,14 +152,49 @@ class MultipleFormInput extends Component {
   }
 
   handleSubmit(event){
-    console.log(this.state.select_datasets);
+    /*console.log(this.state.select_datasets);
     console.log(this.state.vizualization_method);
-    console.log(this.state.topic_name);
+    console.log(this.state.topic_name);*/
+    console.log(this.state.fieldNames);
+    const newFieldNames = this.state.fieldNames
+    newFieldNames.forEach(function(s){
+      console.log(s.name);
+      console.log(s.type)
+    })
     event.preventDefault();
   }
 
-  createTopic(event){
-    
+  handleFieldNameChange = (idx) => (evt) => {
+    const newFieldNames = this.state.fieldNames.map((fieldName,sidx) => {
+      if (idx !== sidx) return fieldName;
+      return {... fieldName, name: evt.target.value};
+    });
+
+    this.setState({fieldNames: newFieldNames})
+  }
+
+  handleRemoveFields = (idx) => () => {
+    this.setState({
+      fieldNames: this.state.fieldNames.filter((s, sidx) => idx !== sidx)
+    });
+  }
+
+  handleAddFileName = () => {
+    this.setState({
+      fieldNames: this.state.fieldNames.concat([{name: ''}])
+    });
+  }
+
+  handleFieldTypeChange = (idx) => (evt) => {
+    console.log('field type')
+    const newFieldTypes = this.state.fieldTypes.map((fieldType,sidx) => {
+      if (idx !== sidx) return fieldType;
+      return {... fieldType, type: evt.target.value};
+    });
+
+    this.setState({fieldNames: newFieldTypes})
+  }
+  createTopic(event){  
     // need to set output topic into a state
     $.ajax({
       url: "http://localhost:8080/api/startKafkaCommandShell",
@@ -206,8 +244,10 @@ class MultipleFormInput extends Component {
              kafka_bootstrap_server: '127.0.0.1:9092', 
              subscribe_topic: this.state.topic_name,  
              subscribe_output_topic: this.state.topic_output_name,
-             fieldNameListNameAsString: "[\"sepal_length_in_cm\",\"sepal_width_in_cm\",\"petal_length_in_cm\",\"petal_width_in_cm\",\"class\",\"emni\"]",
-             fieldTypeListNameAsString: "[\"double\",\"double\",\"double\",\"double\",\"string\",\"string\"]"},
+             fieldNameListNameAsString: sessionStorage.getItem('fieldNames'),
+             fieldTypeListNameAsString: sessionStorage.getItem('fieldTypes')},
+             //fieldNameListNameAsString: "[\"sepal_length_in_cm\",\"sepal_width_in_cm\",\"petal_length_in_cm\",\"petal_width_in_cm\",\"class\",\"emni\"]",
+             //fieldTypeListNameAsString: "[\"double\",\"double\",\"double\",\"double\",\"string\",\"string\"]"},
       success: function(data){
       }.bind(this),
       error: function(xhr, status, err){
@@ -251,7 +291,16 @@ class MultipleFormInput extends Component {
          </select>
         </div>
         <br />
-        <label>Visualization method: </label> <br />
+        <label>Data Description:</label> <br />
+        {this.state.fieldNames.map((fieldName,idx) => (
+          <div className="fieldName">
+            <input type="text" placeholder={`fieldName`} value={fieldName.name} onChange={this.handleFieldNameChange(idx)} /> &nbsp; &nbsp;  
+            <input type="text" placeholder={`fieldType`} value={fieldName.type} onChange={this.handleFieldTypeChange(idx)} /> &nbsp; 
+            <button type="button" onClick = {this.handleRemoveFields(idx)} className="small"> - </button>
+          </div>
+        ))}
+        <button type="button" onClick= {this.handleAddFileName} className="small"> Add Field </button> <br />
+        <label>Visualization method: </label> <br /> 
         <div className="radio">
           <label>
             <input type="radio" name="vizualization_method" value="scatter" onChange={this.handleInputChange} />
@@ -296,6 +345,7 @@ class MultipleFormInput extends Component {
         </form>
 
         <Plot data= {this.state.reduced_drawing_data_state} layout={this.state.reduced_drawing_layout_state} />
+        <button> submit </button>
       </form>
 
 
