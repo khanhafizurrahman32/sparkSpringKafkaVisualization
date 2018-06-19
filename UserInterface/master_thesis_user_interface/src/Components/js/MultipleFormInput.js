@@ -152,9 +152,6 @@ class MultipleFormInput extends Component {
   }
 
   handleSubmit(event){
-    /*console.log(this.state.select_datasets);
-    console.log(this.state.vizualization_method);
-    console.log(this.state.topic_name);*/
     console.log(this.state.fieldNames);
     const newFieldNames = this.state.fieldNames
     newFieldNames.forEach(function(s){
@@ -219,7 +216,12 @@ class MultipleFormInput extends Component {
       url: "http://localhost:8080/api/sendDatatoKafka",
       cache: 'false',
       method: 'POST',
-      data: {kafka_broker_end_point:'127.0.0.1:9092', csv_input_file:this.state.select_datasets, topic_name: this.state.topic_name},
+      data: {kafka_broker_end_point:'127.0.0.1:9092', 
+             csv_input_file:this.state.select_datasets,
+             topic_name: this.state.topic_name,
+             fieldNameListNameAsString: sessionStorage.getItem('fieldNames'),
+             fieldTypeListNameAsString: sessionStorage.getItem('fieldTypes')
+            },
       success: function(data){
       }.bind(this),
       error: function(xhr, status, err){
