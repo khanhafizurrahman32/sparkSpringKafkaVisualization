@@ -1,6 +1,4 @@
 import React, { Component } from 'react';
-import post from 'axios';
-import $ from 'jquery';
 
 //https://gist.github.com/AshikNesin/e44b1950f6a24cfcd85330ffc1713513
 class AddNewDataset extends Component {
@@ -12,7 +10,6 @@ class AddNewDataset extends Component {
     }
     this.onFormSubmit = this.onFormSubmit.bind(this)
     this.onChange = this.onChange.bind(this)
-    this.fileUpload = this.fileUpload.bind(this)
   }
 
 
@@ -24,6 +21,13 @@ class AddNewDataset extends Component {
     var request = new XMLHttpRequest();
     request.open("POST", "http://localhost:8080/api/toaFixedPlace");
     request.send(formData)
+    request.onload = function () {
+      if (request.status === 200){
+        console.log('uploaded successfully');
+      }else {
+        alert ('an error occured')
+      }
+    }.bind(this)
   }
 
 
