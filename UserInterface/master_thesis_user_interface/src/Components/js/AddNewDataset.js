@@ -12,8 +12,6 @@ class AddNewDataset extends Component {
     this.onChange = this.onChange.bind(this)
   }
 
-
-
   onFormSubmit(e){
     e.preventDefault();
     const formData = new FormData();
@@ -29,8 +27,6 @@ class AddNewDataset extends Component {
       }
     }.bind(this)
   }
-
-
 
   onChange(e){
     this.setState({file:e.target.files[0]})
@@ -53,11 +49,6 @@ class AddNewDataset extends Component {
         { formDiv }
       </div>
     );
-  }
-
-  uploadFile(fileInput) {
-    console.log('FileUpload.uploadFile() file selected: ',fileInput);
-    console.log(fileInput.target.files);
   }
 }
 
