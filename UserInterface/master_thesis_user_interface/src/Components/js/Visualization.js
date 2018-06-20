@@ -98,7 +98,7 @@ class Visualization extends Component {
     let header_names = this.state.headerFiles;
     for(let i = 0; i <drawingVals.length; i++){
       let obj = {
-        range: [Math.floor(Math.min(...drawingVals[i])), Math.ceil(Math.max(...drawingVals[0]))],
+        range: [Math.floor(Math.min(...drawingVals[i])), Math.ceil(Math.max(...drawingVals[i]))],
         label: header_names[i],
         values: drawingVals[i]
       }
@@ -168,10 +168,13 @@ class Visualization extends Component {
       arr[arr.length] = colorValues;
     }
     if (visualization_method === "heatmap"){
-      /*data = [{
-        z: [sepal_length_value, sepal_width_value, petal_length_value, petal_width_value],
+      data = [{
+        z: drawingVals,
         type: visualization_method
-      }];*/
+      }];
+      layout= {width: 540, height: 450, title: 'Raw data ', 
+                xaxis: {title: '', showgrid: false}, 
+                yaxis: {title: '', showgrid: false}}
     } else if (visualization_method === "parcoords"){
       let response_vals = this.drawParallelCoordinates(visualization_method, classLabels_numeric, drawingVals);
       data = response_vals[0];
