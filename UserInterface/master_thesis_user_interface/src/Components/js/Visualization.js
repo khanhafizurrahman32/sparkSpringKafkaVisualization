@@ -94,6 +94,16 @@ class Visualization extends Component {
 
   drawParallelCoordinates(visualization_method, classLabels_numeric, drawingVals){
     let return_vals = [];
+    const dimensions_array = [];
+    let header_names = this.state.headerFiles;
+    for(let i = 0; i <drawingVals.length; i++){
+      let obj = {
+        range: [Math.floor(Math.min(...drawingVals[i])), Math.ceil(Math.max(...drawingVals[0]))],
+        label: header_names[i],
+        values: drawingVals[i]
+      }
+      dimensions_array.push(obj);
+    }
     let data = [{
       type: visualization_method,
       pad: [80,80,80,80],
@@ -102,29 +112,7 @@ class Visualization extends Component {
         colorscale: [[0,'red'], [0.5, 'green'], [1,'blue']]
       },
 
-      dimensions: [
-        {
-          constraintrange: [5,6],
-          range: [4,8],
-          label: 'sepal_length',
-          values: drawingVals[0]
-        },
-        {
-          range: [2,4.5],
-          label: 'sepal_width',
-          values: drawingVals[1],
-        },
-        {
-          label: 'petal_length',
-          range: [1,7],
-          values: drawingVals[2] 
-        },
-        {
-          label: 'petal_width',
-          range: [0, 2.5],
-          values: drawingVals[3]
-        } 
-      ]
+      dimensions: dimensions_array
     }];
 
     let layout = {
