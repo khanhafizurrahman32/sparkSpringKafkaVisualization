@@ -79,7 +79,8 @@ class Visualization extends Component {
 
   createJsonContainingHeader_n_Contents(header_of_file,contents_of_file){
     //var headerList = header_of_file.split(',');
-  	var objArray = [];
+    var objArray = [];
+    header_of_file.splice(-1,1);
   	for (var i =0; i< contents_of_file.length; i++){
   		var containFileList = contents_of_file[i].split(',');
   		var obj = {};
@@ -91,7 +92,48 @@ class Visualization extends Component {
 	  } 
   }
 
- 
+  drawParallelCoordinates(visualization_method, classLabels_numeric, drawingVals){
+    let return_vals = [];
+    let data = [{
+      type: visualization_method,
+      pad: [80,80,80,80],
+      line: {
+        color: classLabels_numeric,
+        colorscale: [[0,'red'], [0.5, 'green'], [1,'blue']]
+      },
+
+      dimensions: [
+        {
+          constraintrange: [5,6],
+          range: [4,8],
+          label: 'sepal_length',
+          values: drawingVals[0]
+        },
+        {
+          range: [2,4.5],
+          label: 'sepal_width',
+          values: drawingVals[1],
+        },
+        {
+          label: 'petal_length',
+          range: [1,7],
+          values: drawingVals[2] 
+        },
+        {
+          label: 'petal_width',
+          range: [0, 2.5],
+          values: drawingVals[3]
+        } 
+      ]
+    }];
+
+    let layout = {
+      width:800
+    }
+
+    return_vals.push(data, layout);
+    return return_vals;    
+  }
 
   unpackRows(rows, key){
     return rows.map(function(row){
@@ -101,33 +143,69 @@ class Visualization extends Component {
 
   startRawDataVisualization(){
     var objArray = this.state.ContentsInJsonArray;
+    let fieldNamesArray = this.state.headerFiles;
+    console.log(fieldNamesArray);
+    let drawingVals = [];
+    console.log(objArray);
+    for (let i =0; i<fieldNamesArray.length; i++){
+      console.log('148', fieldNamesArray[i]);
+      drawingVals.push(this.unpackRows(objArray, fieldNamesArray[i]));
+    }
+    /*console.log(drawingVals);
     var sepal_length_value = this.unpackRows(objArray, 'sepal_length');
+    console.log(sepal_length_value);
     var sepal_width_value = this.unpackRows(objArray, 'sepal_width');
-    var classLabels = this.unpackRows(objArray, 'class');
+    var petal_length_value = this.unpackRows(objArray, 'petal_length');
+    var petal_width_value = this.unpackRows(objArray, 'petal_width');
+    var classLabels = this.unpackRows(objArray, 'class');*/
+    let classLabels = drawingVals.pop();
     var classLabels_unique = classLabels.filter((v,i,a) => a.indexOf(v) === i);
+    let dict = {}
+    for (let i =0; i<classLabels_unique.length ; i ++){
+      dict [classLabels_unique[i]] = i + 1; 
+    }
+    console.log(classLabels_unique);
+    console.log(dict)
+    let classLabels_numeric = classLabels.map(function(element){
+      return dict[element]
+    })
     var visualization_method= sessionStorage.getItem('visualizationMethod');
     //console.log(classLabels);
     var colorScale = Plotly.d3.scale.ordinal().range(["#1f77b4","#ff7f0e","#2ca02c"]).domain(classLabels_unique);
     var arr= [];
+    var data;
+    var layout;
     while(arr.length < objArray.length){
       var colorValues = colorScale(objArray[arr.length]['class']);
       arr[arr.length] = colorValues;
     }
-    var data = [
-      {
-        x: sepal_length_value,
-        y: sepal_width_value,
-        type: visualization_method,
-        mode: 'markers',
-        marker: {color: arr,
-                 size: 10
-                },
-      },
-    ]
-    
-    var layout= {width: 540, height: 450, title: 'Raw data ', 
+    if (visualization_method === "heatmap"){
+      /*data = [{
+        z: [sepal_length_value, sepal_width_value, petal_length_value, petal_width_value],
+        type: visualization_method
+      }];*/
+    } else if (visualization_method === "parcoords"){
+      let response_vals = this.drawParallelCoordinates(visualization_method, classLabels_numeric, drawingVals);
+      data = response_vals[0];
+      layout = response_vals[1];
+    }
+    else {
+      /*data = [
+        {
+          x: sepal_length_value,
+          y: sepal_width_value,
+          type: visualization_method,
+          mode: 'markers',
+          marker: {color: arr,
+                   size: 10
+                  },
+        },
+      ]*/  
+    }
+
+    /*var layout= {width: 540, height: 450, title: 'Raw data ', 
                 xaxis: {title: 'Sepal length', showgrid: false}, 
-                yaxis: {title: 'Sepal width', showgrid: false}}
+                yaxis: {title: 'Sepal width', showgrid: false}} */
     
     this.setState({drawingData_state: data});
     this.setState({drawingLayout_state: layout})

@@ -115,14 +115,22 @@ class MultipleFormInput extends Component {
 
   drawGraph(data_for_drawing){
     console.log('graph localization');
-    console.log(this.state.vizualization_method);
-  
-    var data = [{
-        type: 'bar',
+    var data;
+    if (this.state.visualization_method === "heatmap"){
+      data = [
+        {
+          z : [data_for_drawing[0], data_for_drawing[1]],
+          type: this.state.visualization_method
+        }
+      ];
+    }else {
+      data = [{
+        type: this.state.vizualization_method,
         x: data_for_drawing[0],
         y: data_for_drawing[1]
-    }]
-
+      }]
+    }
+    console.log(data); 
     var layout =  {width: 600, height: 500, title: 'Reduced Visualization'} 
     this.setState({reduced_drawing_data_state: data})
     this.setState({reduced_drawing_layout_state: layout})
@@ -191,7 +199,8 @@ class MultipleFormInput extends Component {
 
     this.setState({fieldNames: newFieldTypes})
   }
-  createTopic(event){  
+  createTopic(event){
+    console.log(this.state.vizualization_method);  
     // need to set output topic into a state
     $.ajax({
       url: "http://localhost:8080/api/startKafkaCommandShell",
@@ -317,7 +326,7 @@ class MultipleFormInput extends Component {
         </div>
         <div className="radio">
           <label>
-            <input type="radio" name="vizualization_method" value="parallel_coordinates" onChange={this.handleInputChange}/>
+            <input type="radio" name="vizualization_method" value="parcoords" onChange={this.handleInputChange}/>
             Parallel Coordinates
           </label>
         </div>
