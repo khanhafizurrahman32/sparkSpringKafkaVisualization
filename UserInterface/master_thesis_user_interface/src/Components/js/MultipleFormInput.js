@@ -99,11 +99,11 @@ class MultipleFormInput extends Component {
     //var headerList = header_of_file.split(',');
     console.log('createJsonContainingHeader_n_Contents :: parameters ->', header_of_file, contents_of_file);
     var objArray = [];
-    header_of_file.splice(-1,1);
+    //header_of_file.splice(-1,1);
   	for (var i =0; i< contents_of_file.length; i++){
   		var containFileList = contents_of_file[i].split(',');
   		var obj = {};
-  		for (var j = 0; j < (header_of_file.length); j++){
+  		for (var j = 0; j < (header_of_file.length-1); j++){
   			obj[''+header_of_file[j]+''] = containFileList[j];
   		}
       objArray.push(obj);
@@ -193,6 +193,7 @@ class MultipleFormInput extends Component {
   drawGraph(data_for_drawing){
     console.log('drawGraph:: parameters ->');
     var data;
+    let layout;
     if (this.state.visualization_method === "heatmap"){
       data = [
         {
@@ -200,15 +201,14 @@ class MultipleFormInput extends Component {
           type: this.state.visualization_method
         }
       ];
-    }else if (this.state.visualization_method === "parcoords") {
-      data = [{
-        type: this.state.vizualization_method,
-        x: data_for_drawing[0],
-        y: data_for_drawing[1]
-      }]
-      this.drawParallelCoordinates(this.state.vizualization_method,this.state.classLabels_numeric, data_for_drawing)
+      layout =  {width: 400, height: 500, title: 'Reduced Visualization'} 
+    }else if (this.state.vizualization_method === "parcoords") {
+      console.log('parallel coordinates');
+      let response_vals = this.drawParallelCoordinates(this.state.vizualization_method,this.state.classLabels_numeric, data_for_drawing)
+      data = response_vals[0];
+      layout = response_vals[1];
+      console.log(data);
     }
-    var layout =  {width: 400, height: 500, title: 'Reduced Visualization'} 
     this.setState({reduced_drawing_data_state: data})
     this.setState({reduced_drawing_layout_state: layout})
   }
@@ -366,7 +366,7 @@ class MultipleFormInput extends Component {
     var objArray = this.state.ContentsInJsonArray;
     let fieldNamesArray = this.state.headerFiles;
     let drawingVals = [];
-    for (let i =0; i<fieldNamesArray.length; i++){
+    for (let i =0; i<(fieldNamesArray.length-1); i++){
       drawingVals.push(this.unpackRows(objArray, fieldNamesArray[i]));
     }
     let classLabels = drawingVals.pop();
@@ -385,6 +385,7 @@ class MultipleFormInput extends Component {
 
   startRawDataVisualization(){
     console.log('startRawDataVisualization:: parameters ->');
+    console.log(this.state.vizualization_method);
     let objArray = this.state.ContentsInJsonArray;
     let classLabels_unique = this.state.classLabels_unique;
     let classLabels_numeric = this.state.classLabels_numeric;
