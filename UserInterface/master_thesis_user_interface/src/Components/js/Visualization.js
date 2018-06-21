@@ -39,7 +39,7 @@ class Visualization extends Component {
     })
   }
   getHeaderFiles(){
-    var currentFileTobProcessed = sessionStorage.getItem('currentFile');
+    let currentFileTobProcessed = sessionStorage.getItem('currentFile');
     $.ajax({
       url: "http://localhost:8080/api/getHeadersOfaFile",
       data: {'inputFilePath': currentFileTobProcessed},

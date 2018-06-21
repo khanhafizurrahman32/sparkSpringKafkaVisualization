@@ -19,10 +19,10 @@ class App extends Component {
       <div className="App">
           <Router>
             <div className="row">
-                <div className="col-sm-3 col-md-6 col-lg-4" style={{'backgroundColor': 'lavender'}}>
+                <div className="col-sm-2 col-md-3 col-lg-2" style={{'backgroundColor': 'lavender'}}>
                   <Sidebar />
                 </div>
-                <div className="col-sm-9 col-md-6 col-lg-8" style={{'backgroundColor': 'lavenderblush'}}>
+                <div className="col-sm-10 col-md-9 col-lg-10" style={{'backgroundColor': 'lavenderblush'}}>
                   <Route exact path="/DataTypeSelection" component={DataTypeSelection} />
                   <Route exact path="/DataSetSelection" component={DataSetSelection} />
                   <Route exact path="/AddNewDataset" component={AddNewDataset} />

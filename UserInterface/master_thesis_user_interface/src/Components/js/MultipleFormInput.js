@@ -3,7 +3,7 @@ import $ from 'jquery';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
 import Plot from 'react-plotly.js';
-import { SSL_OP_NETSCAPE_DEMO_CIPHER_CHANGE_BUG } from 'constants';
+import Plotly from 'plotly.js/dist/plotly';
 
 let stompClient;
 class MultipleFormInput extends Component {
@@ -21,7 +21,13 @@ class MultipleFormInput extends Component {
       reduced_drawing_layout_state: {},
       stompClient: '',
       fieldNames: [{name: '', type: ''}],
-      fieldTypes: [{name: ''}]
+      fieldTypes: [{name: ''}],
+      headerFiles :'',
+      fileTypes:'',
+      currentFileTobProcessed: '',
+      ContentsInJsonArray: [],
+      drawingData_state: [],
+      drawingLayout_state: {}
     };
 
     this.handleInputChange = this.handleInputChange.bind(this);
@@ -32,6 +38,79 @@ class MultipleFormInput extends Component {
     this.connect = this.connect.bind(this);
     this.disconnect = this.disconnect.bind(this);
     this.visualization = this.visualization.bind(this);
+    this.startPreprocessingFile = this.startPreprocessingFile.bind(this);
+    this.getHeaderFiles = this.getHeaderFiles.bind(this);
+    this.getContentsOfTheFiles = this.getContentsOfTheFiles.bind(this);
+    this.startRawDataVisualization = this.startRawDataVisualization.bind(this);
+  }
+
+  startPreprocessingFile(){
+    var currentFileTobProcessed = sessionStorage.getItem('currentFile');
+    $.ajax({
+      url: "http://localhost:8080/api/preprocessingFile",
+      data: {'inputFilePath': currentFileTobProcessed},
+      dataType: 'text',
+      success: function(data){
+        console.log(data);
+      },
+      error: function(xhr, status, err){
+        console.log(xhr, status, err);
+      }
+    })
+  }
+
+  getHeaderFiles(){
+    var currentFileTobProcessed = sessionStorage.getItem('currentFile');
+    $.ajax({
+      url: "http://localhost:8080/api/getHeadersOfaFile",
+      data: {'inputFilePath': currentFileTobProcessed},
+      dataType: 'json',
+      success: function(data){
+        console.log(data)
+        sessionStorage.setItem('fieldNames', data[0]);
+        sessionStorage.setItem('fieldTypes', data[1]);
+        this.setState({
+          headerFiles : data[0],
+          fileTypes : data[1]
+        })
+      }.bind(this),
+      error: function(xhr, status, err){
+      }
+    });
+  }
+
+  getContentsOfTheFiles(){
+    var currentFileTobProcessed = sessionStorage.getItem('currentFile');
+    $.ajax({
+       url: "http://localhost:8080/api/startProcessingFile",
+       data: {'inputFilePath': currentFileTobProcessed},
+       dataType: 'json',
+       cache: 'false',
+       success: function(data){
+         var containsofTheFile = [];
+         for (var i =0; i <data.length; i++){
+           containsofTheFile.push(data[i]);
+         }
+         this.createJsonContainingHeader_n_Contents(this.state.headerFiles, containsofTheFile);
+       }.bind(this),
+       error: function(xhr, status, err){
+       }
+   });
+  }
+
+  createJsonContainingHeader_n_Contents(header_of_file,contents_of_file){
+    //var headerList = header_of_file.split(',');
+    var objArray = [];
+    header_of_file.splice(-1,1);
+  	for (var i =0; i< contents_of_file.length; i++){
+  		var containFileList = contents_of_file[i].split(',');
+  		var obj = {};
+  		for (var j = 0; j < (header_of_file.length); j++){
+  			obj[''+header_of_file[j]+''] = containFileList[j];
+  		}
+      objArray.push(obj);
+      this.setState({ContentsInJsonArray: objArray});
+	  } 
   }
 
   setConnected(connected) {
@@ -131,7 +210,7 @@ class MultipleFormInput extends Component {
       }]
     }
     console.log(data); 
-    var layout =  {width: 600, height: 500, title: 'Reduced Visualization'} 
+    var layout =  {width: 400, height: 500, title: 'Reduced Visualization'} 
     this.setState({reduced_drawing_data_state: data})
     this.setState({reduced_drawing_layout_state: layout})
   }
@@ -290,76 +369,177 @@ class MultipleFormInput extends Component {
     });
   }
 
+  drawParallelCoordinates(visualization_method, classLabels_numeric, drawingVals){
+    let return_vals = [];
+    const dimensions_array = [];
+    let header_names = this.state.headerFiles;
+    for(let i = 0; i <drawingVals.length; i++){
+      let obj = {
+        range: [Math.floor(Math.min(...drawingVals[i])), Math.ceil(Math.max(...drawingVals[i]))],
+        label: header_names[i],
+        values: drawingVals[i]
+      }
+      dimensions_array.push(obj);
+    }
+    let data = [{
+      type: visualization_method,
+      pad: [80,80,80,80],
+      line: {
+        color: classLabels_numeric,
+        colorscale: [[0,'red'], [0.5, 'green'], [1,'blue']]
+      },
+
+      dimensions: dimensions_array
+    }];
+
+    let layout = {
+      width:400
+    }
+
+    return_vals.push(data, layout);
+    return return_vals;    
+  }
+
+  unpackRows(rows, key){
+    return rows.map(function(row){
+      return row[key];
+    });
+  }
+
+  startRawDataVisualization(){
+    var objArray = this.state.ContentsInJsonArray;
+    let fieldNamesArray = this.state.headerFiles;
+    console.log(fieldNamesArray);
+    let drawingVals = [];
+    console.log(objArray);
+    for (let i =0; i<fieldNamesArray.length; i++){
+      console.log('148', fieldNamesArray[i]);
+      drawingVals.push(this.unpackRows(objArray, fieldNamesArray[i]));
+    }
+    let classLabels = drawingVals.pop();
+    var classLabels_unique = classLabels.filter((v,i,a) => a.indexOf(v) === i);
+    let dict = {}
+    for (let i =0; i<classLabels_unique.length ; i ++){
+      dict [classLabels_unique[i]] = i + 1; 
+    }
+    console.log(classLabels_unique);
+    console.log(dict)
+    let classLabels_numeric = classLabels.map(function(element){
+      return dict[element]
+    })
+    var visualization_method= sessionStorage.getItem('visualizationMethod');
+    //console.log(classLabels);
+    var colorScale = Plotly.d3.scale.ordinal().range(["#1f77b4","#ff7f0e","#2ca02c"]).domain(classLabels_unique);
+    var arr= [];
+    var data;
+    var layout;
+    while(arr.length < objArray.length){
+      var colorValues = colorScale(objArray[arr.length]['class']);
+      arr[arr.length] = colorValues;
+    }
+    if (visualization_method === "heatmap"){
+      data = [{
+        z: drawingVals,
+        type: visualization_method
+      }];
+      layout= {width: 540, height: 450, title: 'Raw data ', 
+                xaxis: {title: '', showgrid: false}, 
+                yaxis: {title: '', showgrid: false}}
+    } else if (visualization_method === "parcoords"){
+      let response_vals = this.drawParallelCoordinates(visualization_method, classLabels_numeric, drawingVals);
+      data = response_vals[0];
+      layout = response_vals[1];
+    }
+    
+    this.setState({drawingData_state: data});
+    this.setState({drawingLayout_state: layout})
+  }
 
   render() {
 
     return (
-      <form onSubmit={this.handleSubmit}>
-        <label>DataSet Selection: </label> <br />
+      <div>
         <div>
+          <span className= "label label-primary"> DataSet Selection: </span> &nbsp; &nbsp;
           <select name="select_datasets" value={this.state.value} onChange={this.handleInputChange}>
             {this.state.receiveValues}
-         </select>
+          </select>
+          <br /> <br/>
+          <button type="button" className= "btn btn-default" onClick={this.startPreprocessingFile}> Preprocessing Of The File </button> &nbsp; &nbsp;
+          <button type="button" className= "btn btn-default" onClick={this.getHeaderFiles}> Schema Of The File </button> &nbsp; &nbsp;
+          <button type="button" className= "btn btn-default" onClick={this.getContentsOfTheFiles}> Content Of The File </button> &nbsp; &nbsp;
         </div>
-        <br />
-        <label>Data Description:</label> <br />
-        {this.state.fieldNames.map((fieldName,idx) => (
-          <div className="fieldName">
-            <input type="text" placeholder={`fieldName`} value={fieldName.name} onChange={this.handleFieldNameChange(idx)} /> &nbsp; &nbsp;  
-            <input type="text" placeholder={`fieldType`} value={fieldName.type} onChange={this.handleFieldTypeChange(idx)} /> &nbsp; 
-            <button type="button" onClick = {this.handleRemoveFields(idx)} className="small"> - </button>
+        <hr />
+        <div>
+          <span className= "label label-primary">Topic Configuration:</span> <br /> <br />
+          <form className="form-inline">
+            <label htmlFor="Name_of_the_topic">Topic Name:</label> &nbsp; &nbsp;
+            <input type="text" name = "topic_name" placeholder="topic_name" onChange={this.handleInputChange} className="form-control"></input> &nbsp;
+            <button type="button" onClick={this.createTopic} className= "btn btn-default"> Create Topic </button>
+          </form>
+          <br />
+          <form className="form-inline">
+            <label htmlFor="Send_Data_to_topic">Send Data:</label> &nbsp; &nbsp;
+            <button type="submit" onClick={this.sendDatatoTopic} className= "btn btn-default"> Send Data </button>
+          </form>
+        </div>
+        < hr/>
+        <div className="row">
+          <div className="col-sm-6 col-md-6 col-lg-6">
+            <span className= "label label-primary"> Visualization Method: </span> &nbsp; &nbsp;
+            <div className="radio">
+              <label>
+                <input type="radio" name="vizualization_method" value="scatter" onChange={this.handleInputChange} />
+                Scatter
+              </label>
+            </div>
+            <div className="radio">
+              <label>
+                <input type="radio" name="vizualization_method" value="heatmap"  onChange={this.handleInputChange}/>
+                Heat Map
+              </label>
+            </div>
+            <div className="radio">
+              <label>
+                <input type="radio" name="vizualization_method" value="parcoords" onChange={this.handleInputChange}/>
+                Parallel Coordinates
+              </label>
+            </div>
           </div>
-        ))}
-        <button type="button" onClick= {this.handleAddFileName} className="small"> Add Field </button> <br />
-        <label>Visualization method: </label> <br /> 
-        <div className="radio">
-          <label>
-            <input type="radio" name="vizualization_method" value="scatter" onChange={this.handleInputChange} />
-            Scatter
-          </label>
+          <div className="col-sm-6 col-md-6 col-lg-6">
+            <div className="form-group">
+              <label htmlFor="connect_websocket">WebServer connection:</label> &nbsp; &nbsp;
+              <button id="connect" className="btn btn-default" type="submit" onClick={this.connect}>Connect</button> &nbsp;
+              <button id="disconnect" className="btn btn-default" type="submit" disabled="disabled" onClick={this.disconnect}>Disconnect
+              </button>
+              <br />
+              <label htmlFor="connect_visualization">Visualization connection:</label> &nbsp; &nbsp;
+              <button id="send" className="btn btn-default btn-sm" type="submit" onClick={this.visualization}>Visualization</button> <br />
+            </div>
+          </div>
         </div>
-        <div className="radio">
-          <label>
-            <input type="radio" name="vizualization_method" value="heatmap"  onChange={this.handleInputChange}/>
-            Heat Map
-          </label>
+        <hr />
+        <div className= "row">
+          <div className="col-sm-6 col-md-6 col-lg-6">
+            <label htmlFor="raw_viz">Raw Data Visualization:</label> &nbsp; &nbsp;
+            <button id="viz_raw" className="btn btn-default" type="submit" onClick={this.startRawDataVisualization}>Visualization (Raw)</button> &nbsp;
+          </div>
+          <div className="col-sm-6 col-md-6 col-lg-6">
+            <label htmlFor="raw_viz">Dimensional Reduced Data Visualization:</label> &nbsp; &nbsp;
+            <button id="viz_red" className="btn btn-default" type="submit" onClick={this.startkafkasparkCommand}>Visualization (Red.)</button> &nbsp;
+          </div>
         </div>
-        <div className="radio">
-          <label>
-            <input type="radio" name="vizualization_method" value="parcoords" onChange={this.handleInputChange}/>
-            Parallel Coordinates
-          </label>
+        <hr />
+        <div className= "row">
+          <div className="col-sm-6 col-md-6 col-lg-6">
+            <Plot data={this.state.drawingData_state} layout={this.state.drawingLayout_state}/>
+          </div>
+          <div className="col-sm-6 col-md-6 col-lg-6">
+            <Plot data= {this.state.reduced_drawing_data_state} layout={this.state.reduced_drawing_layout_state} />
+          </div>
         </div>
-        <br />
-        <label> Name of the Topic: </label> &nbsp; &nbsp;
-        <input type="text" name = "topic_name" placeholder="topic_name" onChange={this.handleInputChange}></input>
-        &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-        <input type="button" onClick={this.createTopic} value="createTopic!" />
-        <br />
-        <label> Send Data to Topic: </label> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-        <input type="button" onClick={this.sendDatatoTopic} value="Send Data" />
-        <br />
-        <label> Start Dimensionality Reduction: </label> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-        <input type="button" onClick={this.startkafkasparkCommand} value="Dimensionality Reduction"></input>
-        <br />
-        <br />
-      
-       <div className="form-group">
-            <label htmlFor="connect">WebSocket connection:</label>
-            <button id="connect" className="btn btn-default" type="submit" onClick={this.connect}>Connect</button>
-            <button id="disconnect" className="btn btn-default" type="submit" disabled="disabled" onClick={this.disconnect}>Disconnect
-            </button>
-        </div>
-
-        <form className="form-inline">
-            <button id="send" className="btn btn-default" type="submit" onClick={this.visualization}>Visualization</button>
-        </form>
-
-        <Plot data= {this.state.reduced_drawing_data_state} layout={this.state.reduced_drawing_layout_state} />
-        <button> submit </button>
-      </form>
-
-
+        
+      </div>
     );
   }
 }
