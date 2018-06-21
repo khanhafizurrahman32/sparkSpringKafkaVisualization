@@ -46,6 +46,7 @@ class MultipleFormInput extends Component {
   }
 
   startPreprocessingFile(){
+    console.log('startPreprocessingFile :: parameters ->')
     $.ajax({
       url: "http://localhost:8080/api/preprocessingFile",
       data: {'inputFilePath': this.state.select_datasets},
@@ -58,6 +59,7 @@ class MultipleFormInput extends Component {
   }
 
   getHeaderFiles(){
+    console.log('getHeaderFiles :: parameters ->')
     $.ajax({
       url: "http://localhost:8080/api/getHeadersOfaFile",
       data: {'inputFilePath': this.state.select_datasets},
@@ -74,6 +76,7 @@ class MultipleFormInput extends Component {
   }
 
   getContentsOfTheFiles(){
+    console.log('getContentsOfTheFiles :: parameters ->')
     $.ajax({
        url: "http://localhost:8080/api/startProcessingFile",
        data: {'inputFilePath': this.state.select_datasets},
@@ -94,6 +97,7 @@ class MultipleFormInput extends Component {
 
   createJsonContainingHeader_n_Contents(header_of_file,contents_of_file){
     //var headerList = header_of_file.split(',');
+    console.log('createJsonContainingHeader_n_Contents :: parameters ->', header_of_file, contents_of_file);
     var objArray = [];
     header_of_file.splice(-1,1);
   	for (var i =0; i< contents_of_file.length; i++){
@@ -109,11 +113,13 @@ class MultipleFormInput extends Component {
   }
 
   setConnected(connected) {
+    console.log('setConnected:: parameters ->', connected);
     $("#connect").prop("disabled", connected);
     $("#disconnect").prop("disabled", !connected);
   }
 
   connect(){
+      console.log('setConnected:: parameters ->')
       var socket = new SockJS('http://localhost:8080/gs-guide-websocket');
       stompClient = Stomp.over(socket); // use different web socket other than browsers native websocket
       stompClient.connect({}, function (frame) {
@@ -128,11 +134,12 @@ class MultipleFormInput extends Component {
   }
 
   checkallElementsoofArrayEqualorNot(arr){
+    console.log('checkallElementsoofArrayEqualorNot:: parameters ->', arr);
     return new Set(arr).size == 1
   }
 
   manipulateDataForDrawing(input_messages){
- 
+    console.log('manipulateDataForDrawing:: parameters ->', input_messages);
     let globalArray = [];
     let arr = [];
     let input_array = [];
@@ -168,25 +175,28 @@ class MultipleFormInput extends Component {
   }
 
   disconnect(){
-      if (stompClient !== null) {
-          stompClient.disconnect();
-      }
-      this.setConnected(false);
+    console.log('disconnect:: parameters ->');
+    if (stompClient !== null) {
+        stompClient.disconnect();
+    }
+    this.setConnected(false);
   }
 
   visualization(event){
-      event.preventDefault();
-      // body of STOMP message must be String
-      var stompBody = {topic: this.state.topic_output_name, bootstrap_servers: '127.0.0.1:9092'}
-      stompClient.send("/app/checkContinuosData", {}, JSON.stringify(stompBody)); //parameters: destination, headers, body
+    console.log('visualization:: parameters ->');
+    event.preventDefault();
+    // body of STOMP message must be String
+    var stompBody = {topic: this.state.topic_output_name, bootstrap_servers: '127.0.0.1:9092'}
+    stompClient.send("/app/checkContinuosData", {}, JSON.stringify(stompBody)); //parameters: destination, headers, body
   }
 
   drawGraph(data_for_drawing){
+    console.log('drawGraph:: parameters ->');
     var data;
     if (this.state.visualization_method === "heatmap"){
       data = [
         {
-          z : [data_for_drawing[0], data_for_drawing[1]],
+          z : data_for_drawing,
           type: this.state.visualization_method
         }
       ];
@@ -196,7 +206,7 @@ class MultipleFormInput extends Component {
         x: data_for_drawing[0],
         y: data_for_drawing[1]
       }]
-      this.drawParallelCoordinates(this.state.vizualization_method, data_for_drawing)
+      this.drawParallelCoordinates(this.state.vizualization_method,this.state.classLabels_numeric, data_for_drawing)
     }
     var layout =  {width: 400, height: 500, title: 'Reduced Visualization'} 
     this.setState({reduced_drawing_data_state: data})
@@ -204,6 +214,7 @@ class MultipleFormInput extends Component {
   }
 
   handleInputChange(event) {
+    console.log('handleInputChange:: parameters ->')
     const target = event.target;
     let value = '';
     if (target.type === 'radio') {
@@ -224,7 +235,7 @@ class MultipleFormInput extends Component {
   }
 
   createTopic(event){
-    // need to set output topic into a state
+    console.log('createTopic:: parameters ->')
     $.ajax({
       url: "http://localhost:8080/api/startKafkaCommandShell",
       cache: 'false',
@@ -238,11 +249,13 @@ class MultipleFormInput extends Component {
   }
 
   sendDatatoTopic(event){
+    console.log('sendDatatoTopic:: parameters ->');
     event.preventDefault();
     this.sendDataToKafka();
   }
 
   sendDataToKafka(){
+    console.log('sendDataToKafka:: parameters ->');
     $.ajax({
       url: "http://localhost:8080/api/sendDatatoKafka",
       cache: 'false',
@@ -261,11 +274,13 @@ class MultipleFormInput extends Component {
   }
 
   startkafkasparkCommand(event){
+    console.log('startkafkasparkCommand:: parameters ->');
     event.preventDefault();
     this.sparkAnalysisStart();
   }
 
   sparkAnalysisStart(){
+    console.log('sparkAnalysisStart:: parameters ->');
     $.ajax({
       url: "http://localhost:8080/api/startPythonCommandShell",
       cache: 'false',
@@ -290,6 +305,7 @@ class MultipleFormInput extends Component {
 
 
   fetchDataFromDirectory(){
+    console.log('fetchDataFromDirectory:: parameters ->');
     $.ajax({
       url: 'http://localhost:8080/api/readAllFiles',
       dataType: 'json',
@@ -308,6 +324,7 @@ class MultipleFormInput extends Component {
   }
 
   drawParallelCoordinates(visualization_method, classLabels_numeric, drawingVals){
+    console.log('drawParallelCoordinates:: parameters ->', visualization_method, classLabels_numeric, drawingVals);
     let return_vals = [];
     const dimensions_array = [];
     let header_names = this.state.headerFiles;
@@ -326,7 +343,6 @@ class MultipleFormInput extends Component {
         color: classLabels_numeric,
         colorscale: [[0,'red'], [0.5, 'green'], [1,'blue']]
       },
-
       dimensions: dimensions_array
     }];
 
@@ -339,12 +355,14 @@ class MultipleFormInput extends Component {
   }
 
   unpackRows(rows, key){
+    console.log('unpackRows:: parameters ->', rows, key);
     return rows.map(function(row){
       return row[key];
     });
   }
 
   manipulateFile(){
+    console.log('manipulateFile:: parameters ->');
     var objArray = this.state.ContentsInJsonArray;
     let fieldNamesArray = this.state.headerFiles;
     let drawingVals = [];
@@ -366,6 +384,7 @@ class MultipleFormInput extends Component {
   }
 
   startRawDataVisualization(){
+    console.log('startRawDataVisualization:: parameters ->');
     let objArray = this.state.ContentsInJsonArray;
     let classLabels_unique = this.state.classLabels_unique;
     let classLabels_numeric = this.state.classLabels_numeric;
