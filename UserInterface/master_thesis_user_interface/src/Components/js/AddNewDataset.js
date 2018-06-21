@@ -43,7 +43,7 @@ class AddNewDataset extends Component {
                     <button type="submit" className="btn btn-info">Upload</button>
                   </form>
                 </div>
-              </div>
+              </div>       
     return (
       <div id="form-container">
         { formDiv }
