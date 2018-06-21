@@ -25,7 +25,10 @@ class MultipleFormInput extends Component {
       currentFileTobProcessed: '',
       ContentsInJsonArray: [],
       drawingData_state: [],
-      drawingLayout_state: {width: 500, height: 500,}
+      drawingLayout_state: {width: 500, height: 500},
+      classLabels_numeric: '',
+      classLabels_unique: '',
+      value_for_raw_viz: ''
     };
 
     this.handleInputChange = this.handleInputChange.bind(this);
@@ -38,6 +41,7 @@ class MultipleFormInput extends Component {
     this.startPreprocessingFile = this.startPreprocessingFile.bind(this);
     this.getHeaderFiles = this.getHeaderFiles.bind(this);
     this.getContentsOfTheFiles = this.getContentsOfTheFiles.bind(this);
+    this.manipulateFile = this.manipulateFile.bind(this);
     this.startRawDataVisualization = this.startRawDataVisualization.bind(this);
   }
 
@@ -47,10 +51,8 @@ class MultipleFormInput extends Component {
       data: {'inputFilePath': this.state.select_datasets},
       dataType: 'text',
       success: function(data){
-        console.log(data);
       },
       error: function(xhr, status, err){
-        console.log(xhr, status, err);
       }
     })
   }
@@ -61,7 +63,6 @@ class MultipleFormInput extends Component {
       data: {'inputFilePath': this.state.select_datasets},
       dataType: 'json',
       success: function(data){
-        console.log(data)
         this.setState({
           headerFiles : data[0],
           fieldTypes : data[1]
@@ -88,6 +89,7 @@ class MultipleFormInput extends Component {
        error: function(xhr, status, err){
        }
    });
+   
   }
 
   createJsonContainingHeader_n_Contents(header_of_file,contents_of_file){
@@ -102,7 +104,8 @@ class MultipleFormInput extends Component {
   		}
       objArray.push(obj);
       this.setState({ContentsInJsonArray: objArray});
-	  } 
+    } 
+    this.manipulateFile()
   }
 
   setConnected(connected) {
@@ -115,7 +118,6 @@ class MultipleFormInput extends Component {
       stompClient = Stomp.over(socket); // use different web socket other than browsers native websocket
       stompClient.connect({}, function (frame) {
           this.setConnected(true);
-          console.log('Connected: ' + frame);
           // subscribe method returns id and unsubscribe method
           stompClient.subscribe('/topic/kafkaMessages', function (messageFromKafka) {
               let input_messages = new Array(messageFromKafka.body);
@@ -162,18 +164,14 @@ class MultipleFormInput extends Component {
         arr = []
       }
     }
-
-    console.log(globalArray);
     return globalArray;
   }
 
   disconnect(){
-      console.log('disconnect');
       if (stompClient !== null) {
           stompClient.disconnect();
       }
       this.setConnected(false);
-      console.log("Disconnected"); 
   }
 
   visualization(event){
@@ -183,10 +181,7 @@ class MultipleFormInput extends Component {
       stompClient.send("/app/checkContinuosData", {}, JSON.stringify(stompBody)); //parameters: destination, headers, body
   }
 
-
   drawGraph(data_for_drawing){
-    console.log('graph localization');
-    console.log(data_for_drawing);
     var data;
     if (this.state.visualization_method === "heatmap"){
       data = [
@@ -195,14 +190,14 @@ class MultipleFormInput extends Component {
           type: this.state.visualization_method
         }
       ];
-    }else {
+    }else if (this.state.visualization_method === "parcoords") {
       data = [{
         type: this.state.vizualization_method,
         x: data_for_drawing[0],
         y: data_for_drawing[1]
       }]
+      this.drawParallelCoordinates(this.state.vizualization_method, data_for_drawing)
     }
-    console.log(data); 
     var layout =  {width: 400, height: 500, title: 'Reduced Visualization'} 
     this.setState({reduced_drawing_data_state: data})
     this.setState({reduced_drawing_layout_state: layout})
@@ -229,7 +224,6 @@ class MultipleFormInput extends Component {
   }
 
   createTopic(event){
-    console.log(this.state.vizualization_method);  
     // need to set output topic into a state
     $.ajax({
       url: "http://localhost:8080/api/startKafkaCommandShell",
@@ -244,13 +238,11 @@ class MultipleFormInput extends Component {
   }
 
   sendDatatoTopic(event){
-    console.log('send Data to Topic');
     event.preventDefault();
     this.sendDataToKafka();
   }
 
   sendDataToKafka(){
-    console.log(this.state.select_datasets, this.state.topic_name, this.state.headerFiles, this.state.fieldTypes)
     $.ajax({
       url: "http://localhost:8080/api/sendDatatoKafka",
       cache: 'false',
@@ -269,13 +261,11 @@ class MultipleFormInput extends Component {
   }
 
   startkafkasparkCommand(event){
-    console.log('inside startkafkasparkCommand');
     event.preventDefault();
     this.sparkAnalysisStart();
   }
 
   sparkAnalysisStart(){
-    console.log('sparkAnalysisStart');
     $.ajax({
       url: "http://localhost:8080/api/startPythonCommandShell",
       cache: 'false',
@@ -313,7 +303,6 @@ class MultipleFormInput extends Component {
         });
       }.bind(this),
       error: function(xhr, status, err){
-        console.log('', status, err);
       }.bind(this)
     });
   }
@@ -355,29 +344,33 @@ class MultipleFormInput extends Component {
     });
   }
 
-  startRawDataVisualization(){
+  manipulateFile(){
     var objArray = this.state.ContentsInJsonArray;
     let fieldNamesArray = this.state.headerFiles;
-    console.log(fieldNamesArray);
     let drawingVals = [];
-    console.log(objArray);
     for (let i =0; i<fieldNamesArray.length; i++){
-      
       drawingVals.push(this.unpackRows(objArray, fieldNamesArray[i]));
     }
     let classLabels = drawingVals.pop();
+    this.setState({value_for_raw_viz: drawingVals})
     var classLabels_unique = classLabels.filter((v,i,a) => a.indexOf(v) === i);
+    this.setState({classLabels_unique: classLabels_unique})
     let dict = {}
     for (let i =0; i<classLabels_unique.length ; i ++){
       dict [classLabels_unique[i]] = i + 1; 
     }
-    console.log(classLabels_unique);
-    console.log(dict)
     let classLabels_numeric = classLabels.map(function(element){
       return dict[element]
     })
+    this.setState({classLabels_numeric: classLabels_numeric})
+  }
+
+  startRawDataVisualization(){
+    let objArray = this.state.ContentsInJsonArray;
+    let classLabels_unique = this.state.classLabels_unique;
+    let classLabels_numeric = this.state.classLabels_numeric;
     var visualization_method= this.state.vizualization_method;
-    //console.log(classLabels);
+    let drawingVals = this.state.value_for_raw_viz;
     var colorScale = Plotly.d3.scale.ordinal().range(["#1f77b4","#ff7f0e","#2ca02c"]).domain(classLabels_unique);
     var arr= [];
     var data;
