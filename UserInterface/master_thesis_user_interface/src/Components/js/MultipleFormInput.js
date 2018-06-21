@@ -3,7 +3,7 @@ import $ from 'jquery';
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
 import Plot from 'react-plotly.js';
-import Plotly from 'plotly.js/dist/plotly';
+import Plotly from 'plotly.js/dist/plotly.min.js';
 
 let stompClient;
 class MultipleFormInput extends Component {
@@ -211,6 +211,7 @@ class MultipleFormInput extends Component {
     }
     this.setState({reduced_drawing_data_state: data})
     this.setState({reduced_drawing_layout_state: layout})
+    Plotly.newPlot('reduce_data_div', data);
   }
 
   handleInputChange(event) {
@@ -385,7 +386,6 @@ class MultipleFormInput extends Component {
 
   startRawDataVisualization(){
     console.log('startRawDataVisualization:: parameters ->');
-    console.log(this.state.vizualization_method);
     let objArray = this.state.ContentsInJsonArray;
     let classLabels_unique = this.state.classLabels_unique;
     let classLabels_numeric = this.state.classLabels_numeric;
@@ -393,13 +393,17 @@ class MultipleFormInput extends Component {
     let drawingVals = this.state.value_for_raw_viz;
     var colorScale = Plotly.d3.scale.ordinal().range(["#1f77b4","#ff7f0e","#2ca02c"]).domain(classLabels_unique);
     var arr= [];
-    var data;
-    var layout;
+    var data = [];
+    var layout = {};
     while(arr.length < objArray.length){
       var colorValues = colorScale(objArray[arr.length]['class']);
       arr[arr.length] = colorValues;
     }
     if (visualization_method === "heatmap"){
+      console.log('heatmap -> ', drawingVals, visualization_method);
+      data.length = 0;
+      layout = {}
+      console.log(data, layout);
       data = [{
         z: drawingVals,
         type: visualization_method
@@ -408,17 +412,20 @@ class MultipleFormInput extends Component {
                 xaxis: {title: '', showgrid: false}, 
                 yaxis: {title: '', showgrid: false}}
     } else if (visualization_method === "parcoords"){
+      data.length = 0;
+      layout = {};
       let response_vals = this.drawParallelCoordinates(visualization_method, classLabels_numeric, drawingVals);
       data = response_vals[0];
       layout = response_vals[1];
     }
-    
+    console.log('check')
+    console.log(data);
     this.setState({drawingData_state: data});
     this.setState({drawingLayout_state: layout})
+    Plotly.newPlot('raw_data_div', data)
   }
 
   render() {
-
     return (
       <div>
         <div>
@@ -495,10 +502,12 @@ class MultipleFormInput extends Component {
         <hr />
         <div className= "row">
           <div className="col-sm-6 col-md-6 col-lg-6">
-            <Plot data={this.state.drawingData_state} layout={this.state.drawingLayout_state}/>
+            {/* <Plot data={this.state.drawingData_state} layout={this.state.drawingLayout_state}/> */}
+            <div id="raw_data_div"></div>
           </div>
           <div className="col-sm-6 col-md-6 col-lg-6">
-            <Plot data= {this.state.reduced_drawing_data_state} layout={this.state.reduced_drawing_layout_state} />
+            <div id="reduce_data_div"></div>
+            {/* <Plot data= {this.state.reduced_drawing_data_state} layout={this.state.reduced_drawing_layout_state} /> */}
           </div>
         </div>
         
