@@ -18,20 +18,17 @@ class MultipleFormInput extends Component {
       selectedDataSet: '', // state: DataSetSelection
       selectedOption: '',
       reduced_drawing_data_state: [],
-      reduced_drawing_layout_state: {},
+      reduced_drawing_layout_state: {width: 500, height: 500},
       stompClient: '',
-      fieldNames: [{name: '', type: ''}],
-      fieldTypes: [{name: ''}],
       headerFiles :'',
-      fileTypes:'',
+      fieldTypes:'',
       currentFileTobProcessed: '',
       ContentsInJsonArray: [],
       drawingData_state: [],
-      drawingLayout_state: {}
+      drawingLayout_state: {width: 500, height: 500,}
     };
 
     this.handleInputChange = this.handleInputChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
     this.createTopic = this.createTopic.bind(this);
     this.sendDatatoTopic = this.sendDatatoTopic.bind(this);
     this.startkafkasparkCommand = this.startkafkasparkCommand.bind(this);
@@ -45,10 +42,9 @@ class MultipleFormInput extends Component {
   }
 
   startPreprocessingFile(){
-    var currentFileTobProcessed = sessionStorage.getItem('currentFile');
     $.ajax({
       url: "http://localhost:8080/api/preprocessingFile",
-      data: {'inputFilePath': currentFileTobProcessed},
+      data: {'inputFilePath': this.state.select_datasets},
       dataType: 'text',
       success: function(data){
         console.log(data);
@@ -60,18 +56,15 @@ class MultipleFormInput extends Component {
   }
 
   getHeaderFiles(){
-    var currentFileTobProcessed = sessionStorage.getItem('currentFile');
     $.ajax({
       url: "http://localhost:8080/api/getHeadersOfaFile",
-      data: {'inputFilePath': currentFileTobProcessed},
+      data: {'inputFilePath': this.state.select_datasets},
       dataType: 'json',
       success: function(data){
         console.log(data)
-        sessionStorage.setItem('fieldNames', data[0]);
-        sessionStorage.setItem('fieldTypes', data[1]);
         this.setState({
           headerFiles : data[0],
-          fileTypes : data[1]
+          fieldTypes : data[1]
         })
       }.bind(this),
       error: function(xhr, status, err){
@@ -80,10 +73,9 @@ class MultipleFormInput extends Component {
   }
 
   getContentsOfTheFiles(){
-    var currentFileTobProcessed = sessionStorage.getItem('currentFile');
     $.ajax({
        url: "http://localhost:8080/api/startProcessingFile",
-       data: {'inputFilePath': currentFileTobProcessed},
+       data: {'inputFilePath': this.state.select_datasets},
        dataType: 'json',
        cache: 'false',
        success: function(data){
@@ -187,13 +179,14 @@ class MultipleFormInput extends Component {
   visualization(event){
       event.preventDefault();
       // body of STOMP message must be String
-      var stompBody = {topic: sessionStorage.getItem('topic_name'), bootstrap_servers: '127.0.0.1:9092'}
+      var stompBody = {topic: this.state.topic_output_name, bootstrap_servers: '127.0.0.1:9092'}
       stompClient.send("/app/checkContinuosData", {}, JSON.stringify(stompBody)); //parameters: destination, headers, body
   }
 
 
   drawGraph(data_for_drawing){
     console.log('graph localization');
+    console.log(data_for_drawing);
     var data;
     if (this.state.visualization_method === "heatmap"){
       data = [
@@ -219,16 +212,13 @@ class MultipleFormInput extends Component {
     const target = event.target;
     let value = '';
     if (target.type === 'radio') {
-      sessionStorage.setItem('visualizationMethod', target.value);
       value = target.value
     }else if (target.type === 'text') {
       value = target.value;
       let v = value + "_output"
-      sessionStorage.setItem('topic_name', v);
       this.setState({topic_output_name: v})
    
     }else {
-      sessionStorage.setItem('currentFile', target.value);
       value = target.value
     }
     const name = target.name
@@ -238,46 +228,6 @@ class MultipleFormInput extends Component {
     }));
   }
 
-  handleSubmit(event){
-    console.log(this.state.fieldNames);
-    const newFieldNames = this.state.fieldNames
-    newFieldNames.forEach(function(s){
-      console.log(s.name);
-      console.log(s.type)
-    })
-    event.preventDefault();
-  }
-
-  handleFieldNameChange = (idx) => (evt) => {
-    const newFieldNames = this.state.fieldNames.map((fieldName,sidx) => {
-      if (idx !== sidx) return fieldName;
-      return {... fieldName, name: evt.target.value};
-    });
-
-    this.setState({fieldNames: newFieldNames})
-  }
-
-  handleRemoveFields = (idx) => () => {
-    this.setState({
-      fieldNames: this.state.fieldNames.filter((s, sidx) => idx !== sidx)
-    });
-  }
-
-  handleAddFileName = () => {
-    this.setState({
-      fieldNames: this.state.fieldNames.concat([{name: ''}])
-    });
-  }
-
-  handleFieldTypeChange = (idx) => (evt) => {
-    console.log('field type')
-    const newFieldTypes = this.state.fieldTypes.map((fieldType,sidx) => {
-      if (idx !== sidx) return fieldType;
-      return {... fieldType, type: evt.target.value};
-    });
-
-    this.setState({fieldNames: newFieldTypes})
-  }
   createTopic(event){
     console.log(this.state.vizualization_method);  
     // need to set output topic into a state
@@ -300,6 +250,7 @@ class MultipleFormInput extends Component {
   }
 
   sendDataToKafka(){
+    console.log(this.state.select_datasets, this.state.topic_name, this.state.headerFiles, this.state.fieldTypes)
     $.ajax({
       url: "http://localhost:8080/api/sendDatatoKafka",
       cache: 'false',
@@ -307,8 +258,8 @@ class MultipleFormInput extends Component {
       data: {kafka_broker_end_point:'127.0.0.1:9092', 
              csv_input_file:this.state.select_datasets,
              topic_name: this.state.topic_name,
-             fieldNameListNameAsString: sessionStorage.getItem('fieldNames'),
-             fieldTypeListNameAsString: sessionStorage.getItem('fieldTypes')
+             fieldNameListNameAsString: this.state.headerFiles.join(),
+             fieldTypeListNameAsString: this.state.fieldTypes.join()
             },
       success: function(data){
       }.bind(this),
@@ -334,10 +285,8 @@ class MultipleFormInput extends Component {
              kafka_bootstrap_server: '127.0.0.1:9092', 
              subscribe_topic: this.state.topic_name,  
              subscribe_output_topic: this.state.topic_output_name,
-             fieldNameListNameAsString: sessionStorage.getItem('fieldNames'),
-             fieldTypeListNameAsString: sessionStorage.getItem('fieldTypes')},
-             //fieldNameListNameAsString: "[\"sepal_length_in_cm\",\"sepal_width_in_cm\",\"petal_length_in_cm\",\"petal_width_in_cm\",\"class\",\"emni\"]",
-             //fieldTypeListNameAsString: "[\"double\",\"double\",\"double\",\"double\",\"string\",\"string\"]"},
+             fieldNameListNameAsString: this.state.headerFiles.join(),
+             fieldTypeListNameAsString: this.state.fieldTypes.join()},
       success: function(data){
       }.bind(this),
       error: function(xhr, status, err){
@@ -393,7 +342,7 @@ class MultipleFormInput extends Component {
     }];
 
     let layout = {
-      width:400
+      width:500
     }
 
     return_vals.push(data, layout);
@@ -413,7 +362,7 @@ class MultipleFormInput extends Component {
     let drawingVals = [];
     console.log(objArray);
     for (let i =0; i<fieldNamesArray.length; i++){
-      console.log('148', fieldNamesArray[i]);
+      
       drawingVals.push(this.unpackRows(objArray, fieldNamesArray[i]));
     }
     let classLabels = drawingVals.pop();
@@ -427,7 +376,7 @@ class MultipleFormInput extends Component {
     let classLabels_numeric = classLabels.map(function(element){
       return dict[element]
     })
-    var visualization_method= sessionStorage.getItem('visualizationMethod');
+    var visualization_method= this.state.vizualization_method;
     //console.log(classLabels);
     var colorScale = Plotly.d3.scale.ordinal().range(["#1f77b4","#ff7f0e","#2ca02c"]).domain(classLabels_unique);
     var arr= [];
@@ -480,7 +429,7 @@ class MultipleFormInput extends Component {
           <br />
           <form className="form-inline">
             <label htmlFor="Send_Data_to_topic">Send Data:</label> &nbsp; &nbsp;
-            <button type="submit" onClick={this.sendDatatoTopic} className= "btn btn-default"> Send Data </button>
+            <button type="button" onClick={this.sendDatatoTopic} className= "btn btn-default"> Send Data </button>
           </form>
         </div>
         < hr/>
@@ -507,14 +456,15 @@ class MultipleFormInput extends Component {
             </div>
           </div>
           <div className="col-sm-6 col-md-6 col-lg-6">
+          <span className= "label label-primary"> WebServer Configuration: </span> &nbsp; &nbsp;
             <div className="form-group">
               <label htmlFor="connect_websocket">WebServer connection:</label> &nbsp; &nbsp;
-              <button id="connect" className="btn btn-default" type="submit" onClick={this.connect}>Connect</button> &nbsp;
-              <button id="disconnect" className="btn btn-default" type="submit" disabled="disabled" onClick={this.disconnect}>Disconnect
+              <button id="connect" className="btn btn-default btn-xs" type="button" onClick={this.connect}>Connect</button> &nbsp;
+              <button id="disconnect" className="btn btn-default btn-xs" type="button" disabled="disabled" onClick={this.disconnect}>Disconnect
               </button>
               <br />
               <label htmlFor="connect_visualization">Visualization connection:</label> &nbsp; &nbsp;
-              <button id="send" className="btn btn-default btn-sm" type="submit" onClick={this.visualization}>Visualization</button> <br />
+              <button id="send" className="btn btn-default btn-sm" type="button" onClick={this.visualization}>Visualization</button> <br />
             </div>
           </div>
         </div>
@@ -522,11 +472,11 @@ class MultipleFormInput extends Component {
         <div className= "row">
           <div className="col-sm-6 col-md-6 col-lg-6">
             <label htmlFor="raw_viz">Raw Data Visualization:</label> &nbsp; &nbsp;
-            <button id="viz_raw" className="btn btn-default" type="submit" onClick={this.startRawDataVisualization}>Visualization (Raw)</button> &nbsp;
+            <button id="viz_raw" className="btn btn-default" type="button" onClick={this.startRawDataVisualization}>Visualization (Raw)</button> &nbsp;
           </div>
           <div className="col-sm-6 col-md-6 col-lg-6">
             <label htmlFor="raw_viz">Dimensional Reduced Data Visualization:</label> &nbsp; &nbsp;
-            <button id="viz_red" className="btn btn-default" type="submit" onClick={this.startkafkasparkCommand}>Visualization (Red.)</button> &nbsp;
+            <button id="viz_red" className="btn btn-default" type="button" onClick={this.startkafkasparkCommand}>Visualization (Red.)</button> &nbsp;
           </div>
         </div>
         <hr />
