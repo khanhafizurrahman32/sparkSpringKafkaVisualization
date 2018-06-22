@@ -191,27 +191,30 @@ class MultipleFormInput extends Component {
   }
 
   drawGraph(data_for_drawing){
-    console.log('drawGraph:: parameters ->');
-    var data;
-    let layout;
-    if (this.state.visualization_method === "heatmap"){
+    console.log('drawGraph:: parameters ->', data_for_drawing);
+    var data = [];
+    let layout ={};
+    if (this.state.vizualization_method === "heatmap"){
+      data.length = 0;
+      layout = {};
       data = [
         {
           z : data_for_drawing,
-          type: this.state.visualization_method
+          type: this.state.vizualization_method
         }
       ];
       layout =  {width: 400, height: 500, title: 'Reduced Visualization'} 
     }else if (this.state.vizualization_method === "parcoords") {
+      data.length = 0;
+      layout = {};
       console.log('parallel coordinates');
       let response_vals = this.drawParallelCoordinates(this.state.vizualization_method,this.state.classLabels_numeric, data_for_drawing)
       data = response_vals[0];
       layout = response_vals[1];
-      console.log(data);
     }
     this.setState({reduced_drawing_data_state: data})
     this.setState({reduced_drawing_layout_state: layout})
-    Plotly.newPlot('reduce_data_div', data);
+    Plotly.newPlot('reduce_data_div', data, layout);
   }
 
   handleInputChange(event) {
@@ -324,8 +327,8 @@ class MultipleFormInput extends Component {
     });
   }
 
-  drawParallelCoordinates(visualization_method, classLabels_numeric, drawingVals){
-    console.log('drawParallelCoordinates:: parameters ->', visualization_method, classLabels_numeric, drawingVals);
+  drawParallelCoordinates(vizualization_method, classLabels_numeric, drawingVals){
+    console.log('drawParallelCoordinates:: parameters ->', vizualization_method, classLabels_numeric, drawingVals);
     let return_vals = [];
     const dimensions_array = [];
     let header_names = this.state.headerFiles;
@@ -338,7 +341,7 @@ class MultipleFormInput extends Component {
       dimensions_array.push(obj);
     }
     let data = [{
-      type: visualization_method,
+      type: vizualization_method,
       pad: [80,80,80,80],
       line: {
         color: classLabels_numeric,
@@ -389,7 +392,7 @@ class MultipleFormInput extends Component {
     let objArray = this.state.ContentsInJsonArray;
     let classLabels_unique = this.state.classLabels_unique;
     let classLabels_numeric = this.state.classLabels_numeric;
-    var visualization_method= this.state.vizualization_method;
+    var vizualization_method= this.state.vizualization_method;
     let drawingVals = this.state.value_for_raw_viz;
     var colorScale = Plotly.d3.scale.ordinal().range(["#1f77b4","#ff7f0e","#2ca02c"]).domain(classLabels_unique);
     var arr= [];
@@ -399,22 +402,23 @@ class MultipleFormInput extends Component {
       var colorValues = colorScale(objArray[arr.length]['class']);
       arr[arr.length] = colorValues;
     }
-    if (visualization_method === "heatmap"){
-      console.log('heatmap -> ', drawingVals, visualization_method);
+    if (vizualization_method === "heatmap"){
+      console.log('heatmap -> ', drawingVals, vizualization_method);
       data.length = 0;
       layout = {}
       console.log(data, layout);
       data = [{
         z: drawingVals,
-        type: visualization_method
+        type: vizualization_method
       }];
+      // layout is not used in the final place
       layout= {width: 540, height: 450, title: 'Raw data ', 
                 xaxis: {title: '', showgrid: false}, 
                 yaxis: {title: '', showgrid: false}}
-    } else if (visualization_method === "parcoords"){
+    } else if (vizualization_method === "parcoords"){
       data.length = 0;
       layout = {};
-      let response_vals = this.drawParallelCoordinates(visualization_method, classLabels_numeric, drawingVals);
+      let response_vals = this.drawParallelCoordinates(vizualization_method, classLabels_numeric, drawingVals);
       data = response_vals[0];
       layout = response_vals[1];
     }
